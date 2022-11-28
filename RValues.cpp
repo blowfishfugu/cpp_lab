@@ -47,7 +47,7 @@ std::string&& fulltrim(std::string&& strVal)
 	return rtrim(ltrim(std::forward<std::string>(strVal)));
 }
 
-std::string&& fulltrim(std::string const& strVal)
+std::string fulltrim(std::string const& strVal)
 {
 	std::string tmp(strVal);
 	return rtrim(ltrim(std::forward<std::string>(tmp))); //<-temp kopie, landet im forwarding
@@ -67,7 +67,7 @@ TEST(rvalues, s1)
 
 TEST(rvalues, s2_constCopy)
 {
-	std::string strTest1 = "   hello world  \t  ";
+	const std::string strTest1 = "   hello world  \t  ";
 	markedOut(strTest1);
 	std::string strTest2 = trim(strTest1);
 	markedOut(strTest1);
@@ -103,7 +103,7 @@ TEST(rvalues, s5_combinedTrim)
 TEST(rvalues, s6_forwardedCopy)
 {
 	std::string strTest1 = "   hello world  \t  ";
-	std::string strTest2 = fulltrim(strTest1);
+	std::string strTest2 = fulltrim((strTest1));
 	markedOut(strTest2);
 	ASSERT_TRUE(strTest2.compare("hello world") == 0);
 	ASSERT_TRUE(strTest1.compare("   hello world  \t  ") == 0);
