@@ -10,7 +10,7 @@ namespace fs = std::filesystem;
 
 TEST(UseFileSystem, check_relative)
 {
-	std::wstring strFile;
+	std::string strFile;
 	strFile.resize(MAX_PATH, '\0');
 	GetModuleFileName(NULL, strFile.data(), MAX_PATH);
 
