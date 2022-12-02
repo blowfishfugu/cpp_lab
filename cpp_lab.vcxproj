@@ -37,6 +37,7 @@
   <ItemGroup>
     <ClCompile Include="MoveSemantic.cpp" />
     <ClCompile Include="RValues.cpp" />
+    <ClCompile Include="SomeTuples.cpp" />
     <ClCompile Include="test.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
