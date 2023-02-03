@@ -35,6 +35,7 @@
     <ClInclude Include="TTracer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="functional_examples.cpp" />
     <ClCompile Include="MoveSemantic.cpp" />
     <ClCompile Include="RValues.cpp" />
     <ClCompile Include="SomeTuples.cpp" />
