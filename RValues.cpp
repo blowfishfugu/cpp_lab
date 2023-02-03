@@ -107,3 +107,10 @@ TEST(rvalues, s6_forwardedCopy)
 	ASSERT_TRUE(strTest2.compare("hello world") == 0);
 	ASSERT_TRUE(strTest1.compare("   hello world  \t  ") == 0);
 }
+
+TEST(shorthands, plusplusplus)
+{
+	int i = 0;
+	i=i+=++i+=++i;
+	std::cout << i << "\n";
+}
