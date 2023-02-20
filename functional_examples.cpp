@@ -4,7 +4,8 @@
 #include <array>
 
 //standard
-void output(int value)
+template<typename NumberType>
+void output(NumberType value)
 {
 	std::cout << std::setw(3) << value << ",";
 }
@@ -142,20 +143,22 @@ void for_each_if(iterator begin, iterator end, Pred pred, Operation op)
 	return;
 }
 
-bool is_odd(int v) { return (v % 2) != 0; }
-bool always(int) { return true; }
-void mult_2(int& v) { v *= 2; }
+using NumberType = __int64;
+bool is_odd(NumberType v) { return (v % 2) != 0; }
+bool always(NumberType) { return true; }
+void mult_2(NumberType& v) { v *= 2; }
 
 TEST(functional_ex, combinations)
 {
-	int values[] = { 12,3,54,13,63,14,7,23,5,35,1,65,15,9,6,11,41 };
+	NumberType values[] = { 12,3,54,13,63,14,7,23,5,35,1,65,15,9,6,255,255,255,255 };
 	
 	//constexpr size_t maxindex = (sizeof(values) / sizeof(int))-1LL;
-	int* begin = std::begin(values); // &values[0];
-	int* end = std::end(values);//!! gefährlich? std::end zeigt eins hinter array, &values[maxindex];
-	for_each_if(begin, end, always, output); std::cout << "\n";
+	auto* begin = std::begin(values); // &values[0];
+	auto* end = std::end(values);//!! gefährlich? std::end zeigt eins hinter array, &values[maxindex];
+	void* addressof_begin = &begin;
+	for_each_if(begin, end, always, output<NumberType>); std::cout << "\n";
 	for_each_if(begin, end, is_odd, mult_2);
-	for_each_if(begin, end, always, output); std::cout << "\n";
+	for_each_if(begin, end, always, output<NumberType>); std::cout << "\n";
 	
 }
 
@@ -203,7 +206,7 @@ TEST(functional_ex, threading)
 {
 	std::vector<int> values = { 12,3,54,13,63,14,7,23,5,35,1,65,15,9,6,11,41 };
 	auto it = std::partition(values.begin(), values.end(), is_odd);
-	for_each_if(values.begin(), values.end(), always, output);
+	for_each_if(values.begin(), values.end(), always, output<int>);
 	std::cout << "\n";
 
 	auto thread_func = [](auto begin, auto end, auto op) { 
@@ -215,6 +218,6 @@ TEST(functional_ex, threading)
 	t1.join(); // t1.detach(); //"laufen lassen", bis zum ProgrammEnde
 	t2.join();
 
-	for_each_if(values.begin(), values.end(), always, output);
+	for_each_if(values.begin(), values.end(), always, output<int>);
 	std::cout << "\n";
 }
