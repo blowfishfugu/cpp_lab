@@ -150,9 +150,9 @@ TEST(functional_ex, combinations)
 {
 	int values[] = { 12,3,54,13,63,14,7,23,5,35,1,65,15,9,6,11,41 };
 	
-	//constexpr size_t count = (sizeof(values) / sizeof(int));
+	//constexpr size_t maxindex = (sizeof(values) / sizeof(int))-1LL;
 	int* begin = std::begin(values); // &values[0];
-	int* end = std::end(values);// &values[count];
+	int* end = std::end(values);//!! gefährlich? std::end zeigt eins hinter array, &values[maxindex];
 	for_each_if(begin, end, always, output); std::cout << "\n";
 	for_each_if(begin, end, is_odd, mult_2);
 	for_each_if(begin, end, always, output); std::cout << "\n";
