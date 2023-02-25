@@ -43,7 +43,7 @@ struct StopWatch final {
 
 	~StopWatch()
 	{
-		checkpoint("stopwatch finished ");
+		checkpoint("clock done ");
 		return;
 	}
 

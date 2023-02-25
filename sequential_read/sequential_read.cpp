@@ -15,6 +15,6 @@ int main(void)
 	data_type data;
 	__int64 linecount=load<read_standard>(data);
 	std::cout << linecount << " items\n";
-	stopWatch.checkpoint("loaded none ");
+	stopWatch.checkpoint("load done ");
 
 }

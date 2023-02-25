@@ -33,5 +33,16 @@ __int64 _loadByIfStream(data_type& data)
 	{
 		return 0LL;
 	}
-	return 0LL;
+	data.reserve(500000);
+	__int64 cnt = 0LL;
+	std::ifstream input(dataPath->c_str());
+	for (std::string str; std::getline(input, str);)
+	{
+		if (str.length() > 0)
+		{
+			data.emplace_back(str);
+			++cnt;
+		}
+	}
+	return cnt;
 }
