@@ -11,10 +11,11 @@ struct GeoLoc
 	using S = std::string;
 	using I = unsigned int;
 	using D = double;
+	using X = ignored_field;
 	//Berlin;Aachener Straße;1;10713;Charlottenburg-Wilmersdorf;Wilmersdorf;Wilmersdorf;52.482187140;13.318354210
-	std::tuple<ignored_field, S, S, I, S, S, S, D, D> raw_data{};
+	std::tuple<X, S, S, I, S, S, S, D, D> raw_data{};
 
-	ignored_field& City() { return std::get<0>(raw_data); }
+	X& City() { return std::get<0>(raw_data); }
 	S& Street() { return std::get<1>(raw_data); }
 	S& House() { return std::get<2>(raw_data); }
 	I& Zip() { return std::get<3>(raw_data); }

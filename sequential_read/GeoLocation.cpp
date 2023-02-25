@@ -16,7 +16,6 @@ std::ostream& operator<<(std::ostream& output, ignored_field const&)
 template<char delim>
 constexpr void set(std::istringstream& input, GeoLoc::S& target)
 {
-
 	if (std::getline(input, target, delim))
 	{
 		return;
@@ -27,9 +26,7 @@ constexpr void set(std::istringstream& input, GeoLoc::S& target)
 template<char delim>
 constexpr void set(std::istringstream& input, GeoLoc::I& target)
 {
-	std::string tmp;
-
-	if (std::getline(input, tmp, delim))
+	if (std::string tmp; std::getline(input, tmp, delim))
 	{
 		target = std::stoi(tmp);
 		return;
@@ -40,9 +37,7 @@ constexpr void set(std::istringstream& input, GeoLoc::I& target)
 template<char delim>
 constexpr void set(std::istringstream& input, GeoLoc::D& target)
 {
-	std::string tmp;
-
-	if (std::getline(input, tmp, delim))
+	if (std::string tmp; std::getline(input, tmp, delim))
 	{
 		target = std::stod(tmp);
 		return;
@@ -53,8 +48,7 @@ constexpr void set(std::istringstream& input, GeoLoc::D& target)
 template<char delim>
 constexpr void set(std::istringstream& input, ignored_field& target)
 {
-	std::string tmp;
-	if (std::getline(input, tmp, delim))
+	if (std::string tmp; std::getline(input, tmp, delim))
 	{
 		return;
 	}
@@ -64,7 +58,7 @@ constexpr void set(std::istringstream& input, ignored_field& target)
 GeoLoc::GeoLoc(std::string_view csv)
 {
 	std::istringstream input(csv.data());
-	try 
+	try
 	{
 		std::apply([&input](auto&&... items) {
 			(set<';'>(input, items), ...); //items entpacken
