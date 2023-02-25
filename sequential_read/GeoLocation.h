@@ -21,4 +21,5 @@ struct GeoLoc
 	D& Longitude() { return std::get<8>(raw_data); }
 
 	GeoLoc(std::string_view csv);
+	void print() const;
 };

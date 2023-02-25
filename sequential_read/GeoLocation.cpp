@@ -56,3 +56,17 @@ GeoLoc::GeoLoc(std::string_view csv)
 		std::cerr << "incomplete line!: " << csv.data() << "\n";
 	}
 }
+
+void GeoLoc::print() const
+{
+	size_t index = 0;
+	static auto perItem = [&index](const auto& item) {
+		if (index++ != 0) { std::cout << "\t"; }
+		std::cout << item;
+	};
+
+	std::apply([](auto&&... items) {
+		(perItem(items), ...);
+		}, raw_data);
+	std::cout << "\n";
+}
