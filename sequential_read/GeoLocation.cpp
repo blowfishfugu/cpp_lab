@@ -4,6 +4,15 @@
 
 struct incomplete_line_error {};
 
+std::ostream& operator<<(std::ostream& output, ignored_field&)
+{
+	return output;
+}
+std::ostream& operator<<(std::ostream& output, ignored_field const&)
+{
+	return output;
+}
+
 template<char delim>
 constexpr void set(std::istringstream& input, GeoLoc::S& target)
 {
@@ -41,6 +50,17 @@ constexpr void set(std::istringstream& input, GeoLoc::D& target)
 	throw incomplete_line_error{};
 }
 
+template<char delim>
+constexpr void set(std::istringstream& input, ignored_field& target)
+{
+	std::string tmp;
+	if (std::getline(input, tmp, delim))
+	{
+		return;
+	}
+	throw incomplete_line_error{};
+}
+
 GeoLoc::GeoLoc(std::string_view csv)
 {
 	std::istringstream input(csv.data());
@@ -61,7 +81,7 @@ void GeoLoc::print() const
 {
 	size_t index = 0;
 	static auto perItem = [&index](const auto& item) {
-		if (index++ != 0) { std::cout << "\t"; }
+		if (index++ > 0) { std::cout << "\t"; }
 		std::cout << item;
 	};
 
