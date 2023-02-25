@@ -13,7 +13,7 @@ int main(void)
 	StopWatch stopWatch(std::cout);
 	stopWatch.checkpoint("init done ");
 	data_type data;
-	__int64 linecount=load(data);
+	__int64 linecount=load<read_standard>(data);
 	std::cout << linecount << " items\n";
 	stopWatch.checkpoint("loaded none ");
 

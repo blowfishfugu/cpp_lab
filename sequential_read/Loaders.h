@@ -9,13 +9,12 @@ __int64 load(data_type& data) {
 	return 0;
 }
 
-namespace LoadImpl {
-	__int64 _loadByIfStream(data_type& data);
-}
+
 
 template<>
 __int64 load<read_standard>(data_type& data) {
-	return LoadImpl::_loadByIfStream(data);
+	extern __int64 _loadByIfStream(data_type& data);
+	return _loadByIfStream(data);
 }
 
 #endif
