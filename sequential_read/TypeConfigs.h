@@ -2,8 +2,9 @@
 #ifndef TYPECONFIGS_H
 #define TYPECONFIGS_H
 #include <vector>
+#include "GeoLocation.h"
 
-using data_type = std::vector<std::string>;
+using data_type = std::vector<GeoLoc>;
 
 enum LoadApproaches : int {
 	read_none,
