@@ -34,13 +34,6 @@ struct StopWatch final {
 		return;
 	}
 
-	StopWatch(StopWatch&& rValue) noexcept
-	{
-		std::swap(output, rValue.output);
-		std::swap(from_start, rValue.from_start);
-		std::swap(now, rValue.now);
-	}
-
 	~StopWatch()
 	{
 		checkpoint("clock done ");
