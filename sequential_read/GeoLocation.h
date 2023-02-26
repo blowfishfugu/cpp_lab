@@ -15,7 +15,6 @@ struct GeoLoc
 	using SP = const std::string*;
 private:
 	//tuple hat offene Pointer-> private machen.
-	//Achtung: typ SP im catch(incomplete_line_error) zu behandeln, nullptr!
 	//Berlin;Aachener Straﬂe;1;10713;Charlottenburg-Wilmersdorf;Wilmersdorf;Wilmersdorf;52.482187140;13.318354210
 	std::tuple<SP, SP, SP, I, SP, SP, SP, D, D> raw_data{};
 

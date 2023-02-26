@@ -97,6 +97,9 @@
     <ClInclude Include="StopWatch.h" />
     <ClInclude Include="TypeConfigs.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\bin\Data\berlin_infos.dat" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

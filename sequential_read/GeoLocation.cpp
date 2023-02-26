@@ -106,11 +106,27 @@ std::ostream& operator<<(std::ostream& output, GeoLoc::SP const& strPtr)
 
 static std::string emptyString{ "" };
 
+template<typename FieldType>
+void assignEmpty(FieldType& item)
+{
+	return;
+}
+
+template<>
+void assignEmpty(GeoLoc::SP& strPtr)
+{
+	strPtr = &emptyString;
+}
+
 GeoLoc::GeoLoc(std::string_view csv)
 {
-	std::istringstream input(csv.data());
 	try
 	{
+		if (csv.length() == 0)
+		{
+			throw incomplete_line_error{};
+		}
+		std::istringstream input(csv.data());
 		size_t index = 0;
 		auto setItem = [&index](std::istringstream& input, auto& item) {
 			set<';'>(input, item, index);
@@ -128,13 +144,9 @@ GeoLoc::GeoLoc(std::string_view csv)
 		std::cerr << "incomplete line!: " << csv.data() << "\n";
 
 		//Vorzeitiger Abbruch, typ SP vorbelegen!
-		std::get<0>(raw_data) = &emptyString;
-		std::get<1>(raw_data) = &emptyString;
-		std::get<2>(raw_data) = &emptyString;
-
-		std::get<4>(raw_data) = &emptyString;
-		std::get<5>(raw_data) = &emptyString;
-		std::get<6>(raw_data) = &emptyString;
+		std::apply([](auto&&... items){
+			(assignEmpty(items), ...);
+			}, raw_data );
 	}
 }
 
