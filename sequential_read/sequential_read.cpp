@@ -22,22 +22,24 @@ int main(void)
 	std::cout << linecount << " items\n";
 	stopWatch.checkpoint("load done ");
 	
-	if (data.size() > 0)
+	size_t offset = data.size() / 30; //30 items gleichverteilt über alles ausgeben
+	if (offset == 0) { offset = 1LL; } // 1/30=0 abfangen
+	
+	for (size_t i = 0; i < data.size(); i += offset)
 	{
-		for (size_t i = 0; i < data.size(); i += 10000)
-		{
-			data[i].print();
-		}
+		data[i].print();
 	}
+
+
 	stopWatch.checkpoint("print done ");
 
 	extern std::map<size_t, std::set<std::string> > StringPools;
-	std::cout << "Indexes " << StringPools.size() << "\n";
+	std::cout << "Indexcount " << StringPools.size() << "\n";
 	for (const auto& [index,pool] : StringPools)
 	{
-		std::cout << index << "\t Size: " << pool.size() << "\n";
+		std::cout << index << "\t Uniques: " << pool.size() << "\n";
 	}
-	stopWatch.checkpoint("loop indexes done");
+	stopWatch.checkpoint("loop indizes done");
 
 	constexpr std::tuple<double, double> fernsehturm{ 52.520803, 13.40945 };
 

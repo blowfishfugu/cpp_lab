@@ -56,15 +56,18 @@ constexpr void set(std::istringstream& input, ignored_field& target, size_t inde
 	throw incomplete_line_error{};
 }
 
-std::map<size_t, std::set<std::string> > StringPools;
+//strings nicht editierbar, weil sie schlüssel sind.
+std::map<size_t, std::set<GeoLoc::S> > StringPools;
 
+//falls hinterher änderbar sein soll (z.B. umlautersetzung), doppelter Platzbedarf
+//std::map<size_t, std::map<GeoLoc::S,GeoLoc::S> > StringPools;
 
 template<char delim>
 constexpr void set(std::istringstream& input, GeoLoc::SP& target, size_t index)
 {
 	if (std::string tmp; std::getline(input, tmp, delim))
 	{
-		std::set<std::string>& indexPool = StringPools[index];
+		std::set<GeoLoc::S>& indexPool = StringPools[index];
 		auto f = indexPool.find(tmp);
 		if (f == indexPool.end())
 		{
@@ -72,8 +75,8 @@ constexpr void set(std::istringstream& input, GeoLoc::SP& target, size_t index)
 			f=inserted.first;
 		}
 		
-		//nicht schön -> tuple private gemacht
-		std::string *ptr = const_cast<std::string*> ( &(*f) );
+		//nicht schön -> tuple private gemacht, Accessoren müssen const& werden
+		GeoLoc::SP ptr = ( &(*f) );
 		target = ptr;
 		return;
 	}
