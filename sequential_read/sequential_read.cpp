@@ -29,8 +29,6 @@ int main(void)
 	{
 		data[i].print();
 	}
-
-
 	stopWatch.checkpoint("print done ");
 
 	extern std::map<size_t, std::set<std::string> > StringPools;
@@ -40,6 +38,20 @@ int main(void)
 		std::cout << index << "\t Uniques: " << pool.size() << "\n";
 	}
 	stopWatch.checkpoint("loop indizes done");
+
+	size_t objectsSize = sizeof(GeoLoc)*data.size();
+	size_t poolSize = 0;
+	for (const auto&[index, pool] : StringPools)
+	{
+		poolSize += sizeof(index);
+		for (const std::string& str : pool)
+		{
+			poolSize += sizeof(std::string::value_type)*str.size();
+		}
+	}
+	std::cout << "ObjectSize:\t" << objectsSize << "\n";
+	std::cout << "PoolSize:\t" << poolSize << "\n";
+
 
 	constexpr std::tuple<double, double> fernsehturm{ 52.520803, 13.40945 };
 

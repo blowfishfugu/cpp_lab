@@ -32,3 +32,5 @@ public:
 	GeoLoc(std::string_view csv);
 	void print() const;
 };
+
+constexpr const size_t szGeoLoc = sizeof(GeoLoc);
