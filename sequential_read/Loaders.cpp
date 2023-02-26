@@ -40,6 +40,8 @@ __int64 _loadByIfStream(data_type& data)
 	{
 		if (str.length() > 0)
 		{
+			//GeoLoc loc(str);
+			//catch incomplete_line_error.. ungültige einfach weglassen?
 			data.emplace_back(str);
 			++cnt;
 		}

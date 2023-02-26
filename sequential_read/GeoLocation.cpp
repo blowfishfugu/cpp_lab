@@ -104,7 +104,7 @@ std::ostream& operator<<(std::ostream& output, GeoLoc::SP const& strPtr)
 	return output; 
 }
 
-static std::string emptyString{ "" };
+static std::string emptyString{ "(null)" };
 
 template<typename FieldType>
 void assignEmpty(FieldType& item)
@@ -142,6 +142,8 @@ GeoLoc::GeoLoc(std::string_view csv)
 	catch (incomplete_line_error&)
 	{
 		std::cerr << "incomplete line!: " << csv.data() << "\n";
+
+		//alternative: line_error weiterwerfen, so dass leere elemente nicht in data landen?
 
 		//Vorzeitiger Abbruch, typ SP vorbelegen!
 		std::apply([](auto&&... items){
