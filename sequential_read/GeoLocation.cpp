@@ -1,20 +1,18 @@
 #include "GeoLocation.h"
 #include <sstream>
 #include <iostream>
-
+#include <map>
+#include <set>
 struct incomplete_line_error {};
 
-std::ostream& operator<<(std::ostream& output, ignored_field&)
-{
-	return output;
-}
-std::ostream& operator<<(std::ostream& output, ignored_field const&)
-{
-	return output;
-}
+//ignored_field, wird in outstream übersprungen
+std::ostream& operator<<(std::ostream& output, ignored_field&){	return output; }
+//ignored_field, wird in outstream übersprungen
+std::ostream& operator<<(std::ostream& output, ignored_field const&){ return output; }
 
+//String, stream wird konsumiert, direktes befüllen von target
 template<char delim>
-constexpr void set(std::istringstream& input, GeoLoc::S& target)
+constexpr void set(std::istringstream& input, GeoLoc::S& target, size_t index)
 {
 	if (std::getline(input, target, delim))
 	{
@@ -23,8 +21,9 @@ constexpr void set(std::istringstream& input, GeoLoc::S& target)
 	throw incomplete_line_error{};
 }
 
+//Int, stream wird konsumiert, Umwandlung string->int
 template<char delim>
-constexpr void set(std::istringstream& input, GeoLoc::I& target)
+constexpr void set(std::istringstream& input, GeoLoc::I& target, size_t index)
 {
 	if (std::string tmp; std::getline(input, tmp, delim))
 	{
@@ -34,8 +33,9 @@ constexpr void set(std::istringstream& input, GeoLoc::I& target)
 	throw incomplete_line_error{};
 }
 
+//Double, stream wird konsumiert, Umwandlung string->double
 template<char delim>
-constexpr void set(std::istringstream& input, GeoLoc::D& target)
+constexpr void set(std::istringstream& input, GeoLoc::D& target, size_t index)
 {
 	if (std::string tmp; std::getline(input, tmp, delim))
 	{
@@ -45,8 +45,9 @@ constexpr void set(std::istringstream& input, GeoLoc::D& target)
 	throw incomplete_line_error{};
 }
 
+//ignored_field, stream wird konsumiert, desweiteren soll nichts passieren
 template<char delim>
-constexpr void set(std::istringstream& input, ignored_field& target)
+constexpr void set(std::istringstream& input, ignored_field& target, size_t index)
 {
 	if (std::string tmp; std::getline(input, tmp, delim))
 	{
@@ -55,31 +56,94 @@ constexpr void set(std::istringstream& input, ignored_field& target)
 	throw incomplete_line_error{};
 }
 
+std::map<size_t, std::set<std::string> > StringPools;
+
+
+template<char delim>
+constexpr void set(std::istringstream& input, GeoLoc::SP& target, size_t index)
+{
+	if (std::string tmp; std::getline(input, tmp, delim))
+	{
+		std::set<std::string>& indexPool = StringPools[index];
+		auto f = indexPool.find(tmp);
+		if (f == indexPool.end())
+		{
+			auto inserted=indexPool.insert(tmp);
+			f=inserted.first;
+		}
+		
+		//nicht schön -> tuple private gemacht
+		std::string *ptr = const_cast<std::string*> ( &(*f) );
+		target = ptr;
+		return;
+	}
+	throw incomplete_line_error{};
+}
+
+
+std::ostream& operator<<(std::ostream& output, GeoLoc::SP& strPtr) 
+{ 
+	if (strPtr)
+	{
+		output << strPtr->c_str();
+	}
+	else { output << ""; }
+	return output; 
+}
+
+std::ostream& operator<<(std::ostream& output, GeoLoc::SP const& strPtr) 
+{
+	if (strPtr)
+	{
+		output << strPtr->c_str();
+	}
+	else { output << ""; }
+	return output; 
+}
+
+static std::string emptyString{ "" };
+
 GeoLoc::GeoLoc(std::string_view csv)
 {
 	std::istringstream input(csv.data());
 	try
 	{
-		std::apply([&input](auto&&... items) {
-			(set<';'>(input, items), ...); //items entpacken
+		size_t index = 0;
+		auto setItem = [&index](std::istringstream& input, auto& item) {
+			set<';'>(input, item, index);
+			++index;
+		};
+
+		std::apply([&setItem, &input](auto&&... items) {
+			(setItem(input, items), ...);
+			//(set<';'>(input, items), ...); //items entpacken
 			},
 			raw_data);
 	}
 	catch (incomplete_line_error&)
 	{
 		std::cerr << "incomplete line!: " << csv.data() << "\n";
+
+		//Vorzeitiger Abbruch, typ SP vorbelegen!
+		std::get<0>(raw_data) = &emptyString;
+		std::get<1>(raw_data) = &emptyString;
+		std::get<2>(raw_data) = &emptyString;
+
+		std::get<4>(raw_data) = &emptyString;
+		std::get<5>(raw_data) = &emptyString;
+		std::get<6>(raw_data) = &emptyString;
 	}
 }
 
 void GeoLoc::print() const
 {
 	size_t index = 0;
-	static auto perItem = [&index](const auto& item) {
-		if (index++ > 0) { std::cout << "\t"; }
+	auto perItem = [&index](const auto& item) {
+		if (++index > 1) { std::cout << "\t"; }
 		std::cout << item;
 	};
 
-	std::apply([](auto&&... items) {
+	std::apply([&perItem](auto&&... items) {
 		(perItem(items), ...);
 		}, raw_data);
 	std::cout << "\n";
