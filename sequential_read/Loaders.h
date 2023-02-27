@@ -17,4 +17,10 @@ __int64 load<read_standard>(data_type& data) {
 	return _loadByIfStream(data);
 }
 
+template<>
+__int64 load<read_buffered>(data_type& data) {
+	extern __int64 _loadBuffered(data_type& data);
+	return _loadBuffered(data);
+}
+
 #endif

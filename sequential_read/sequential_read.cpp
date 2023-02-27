@@ -11,14 +11,16 @@
 
 int main(void)
 {
-	//doubles
+	std::ios_base::sync_with_stdio(false); //optimierung.
+
+										   //doubles
 	std::cout.setf(std::cout.fixed);
 	std::cout.precision(9);
 
 	StopWatch stopWatch(std::cout);
 	stopWatch.checkpoint("init done ");
 	data_type data;
-	__int64 linecount=load<read_standard>(data);
+	__int64 linecount=load<read_buffered>(data);
 	std::cout << linecount << " items\n";
 	stopWatch.checkpoint("load done ");
 	
