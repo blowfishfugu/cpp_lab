@@ -118,7 +118,7 @@ void assignEmpty(GeoLoc::SP& strPtr)
 	strPtr = &emptyString;
 }
 
-GeoLoc::GeoLoc(std::string_view csv)
+GeoLoc::GeoLoc(std::string_view csv) noexcept
 {
 	try
 	{
@@ -152,7 +152,7 @@ GeoLoc::GeoLoc(std::string_view csv)
 	}
 }
 
-void GeoLoc::print() const
+void GeoLoc::print() const noexcept
 {
 	size_t index = 0;
 	auto perItem = [&index](const auto& item) {

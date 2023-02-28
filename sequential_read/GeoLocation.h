@@ -19,18 +19,18 @@ private:
 	std::tuple<SP, SP, SP, I, SP, SP, SP, D, D> raw_data{};
 
 public:
-	S const& City() { return *std::get<0>(raw_data); }
-	S const& Street() { return *std::get<1>(raw_data); }
-	S const& House() { return *std::get<2>(raw_data); }
-	I& Zip() { return std::get<3>(raw_data); }
-	S const& UrbanName() { return *std::get<4>(raw_data); }
-	S const& OldName() { return *std::get<5>(raw_data); }
-	S const& District() { return *std::get<6>(raw_data); }
-	D& Latitude() { return std::get<7>(raw_data); }
-	D& Longitude() { return std::get<8>(raw_data); }
+	S const& City() noexcept { return *std::get<0>(raw_data); }
+	S const& Street() noexcept { return *std::get<1>(raw_data); }
+	S const& House() noexcept { return *std::get<2>(raw_data); }
+	I& Zip() noexcept { return std::get<3>(raw_data); }
+	S const& UrbanName() noexcept { return *std::get<4>(raw_data); }
+	S const& OldName() noexcept { return *std::get<5>(raw_data); }
+	S const& District() noexcept { return *std::get<6>(raw_data); }
+	D& Latitude() noexcept { return std::get<7>(raw_data); }
+	D& Longitude() noexcept { return std::get<8>(raw_data); }
 
-	GeoLoc(std::string_view csv);
-	void print() const;
+	GeoLoc(std::string_view csv) noexcept;
+	void print() const noexcept;
 };
 
 constexpr const size_t szGeoLoc = sizeof(GeoLoc);
