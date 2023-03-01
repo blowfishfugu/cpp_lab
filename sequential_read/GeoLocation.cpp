@@ -10,52 +10,78 @@ std::ostream& operator<<(std::ostream& output, ignored_field&){	return output; }
 //ignored_field, wird in outstream übersprungen
 std::ostream& operator<<(std::ostream& output, ignored_field const&){ return output; }
 
+//Erweiterbar zum Iterator..
+//++,==
+struct readInfos
+{
+	std::string_view all;
+	int pos = 0;
+};
+
+struct range
+{
+	int begin{};
+	int len{};
+};
+
+range readTo( readInfos& text, char token )
+{
+	int start = text.pos;
+	int len = 0;
+	while( text.pos < text.all.length())
+	{
+		//konsumieren immer
+		char c = text.all[ text.pos ];
+		++text.pos;
+
+		if( c == token )
+		{
+			break;
+		}
+		++len; //token nicht mitzählen
+	}
+	return { start,len };
+}
+
 //String, stream wird konsumiert, direktes befüllen von target
 template<char delim>
-constexpr void set(std::istringstream& input, GeoLoc::S& target, size_t index)
+constexpr void set(readInfos& input, GeoLoc::S& target, size_t index)
 {
-	if (std::getline(input, target, delim))
-	{
-		return;
-	}
-	throw incomplete_line_error{};
+	auto range = readTo( input, delim );
+	if( range.len==0 ){	return;	}
+	target = input.all.substr( range.begin, range.len );
 }
 
 //Int, stream wird konsumiert, Umwandlung string->int
 template<char delim>
-constexpr void set(std::istringstream& input, GeoLoc::I& target, size_t index)
+constexpr void set(readInfos& input, GeoLoc::I& target, size_t index)
 {
-	if (std::string tmp; std::getline(input, tmp, delim))
-	{
-		target = std::stoi(tmp);
-		return;
-	}
-	throw incomplete_line_error{};
+	auto range = readTo( input, delim );
+	if( range.len == 0 ) { return; }
+	std::string tmp{ input.all.substr( range.begin, range.len ) };
+	target = std::stoi(tmp);
+	return;
 }
 
 //Double, stream wird konsumiert, Umwandlung string->double
 template<char delim>
-constexpr void set(std::istringstream& input, GeoLoc::D& target, size_t index)
+constexpr void set(readInfos& input, GeoLoc::D& target, size_t index)
 {
-	if (std::string tmp; std::getline(input, tmp, delim))
-	{
-		target = std::stod(tmp);
-		return;
-	}
-	throw incomplete_line_error{};
+	auto range = readTo( input, delim );
+	if( range.len == 0 ) { return; }
+	std::string tmp{ input.all.substr( range.begin, range.len ) };
+	target = std::stod(tmp);
+	return;
 }
 
 //ignored_field, stream wird konsumiert, desweiteren soll nichts passieren
 template<char delim>
-constexpr void set(std::istringstream& input, ignored_field& target, size_t index)
+constexpr void set(readInfos& input, ignored_field& target, size_t index)
 {
-	if (std::string tmp; std::getline(input, tmp, delim))
-	{
-		return;
-	}
-	throw incomplete_line_error{};
+	readTo( input, delim );
 }
 
+static std::string emptyString{ "(null)" };
 //strings nicht editierbar, weil sie schlüssel sind.
 std::map<size_t, std::set<GeoLoc::S> > StringPools;
 
@@ -63,24 +89,27 @@ std::map<size_t, std::set<GeoLoc::S> > StringPools;
 //std::map<size_t, std::map<GeoLoc::S,GeoLoc::S> > StringPools;
 
 template<char delim>
-constexpr void set(std::istringstream& input, GeoLoc::SP& target, size_t index)
+constexpr void set( readInfos& input, GeoLoc::SP& target, size_t index )
 {
-	if (std::string tmp; std::getline(input, tmp, delim))
-	{
-		std::set<GeoLoc::S>& indexPool = StringPools[index];
-		auto f = indexPool.find(tmp);
-		if (f == indexPool.end())
-		{
-			auto inserted=indexPool.insert(tmp);
-			f=inserted.first;
-		}
-		
-		//nicht schön -> tuple private gemacht, Accessoren müssen const& werden
-		GeoLoc::SP ptr = ( &(*f) );
-		target = ptr;
-		return;
+	auto range = readTo( input, delim );
+	if( range.len == 0 ) { 
+		target = &emptyString;
+		return; 
 	}
-	throw incomplete_line_error{};
+	std::string tmp{ input.all.substr( range.begin, range.len ) };
+
+	std::set<GeoLoc::S>& indexPool = StringPools[ index ];
+	auto f = indexPool.find( tmp );
+	if( f == indexPool.end() )
+	{
+		auto inserted = indexPool.insert( tmp );
+		f = inserted.first;
+	}
+
+	//nicht schön -> tuple private gemacht, Accessoren müssen const& werden
+	GeoLoc::SP ptr = ( &( *f ) );
+	target = ptr;
+	return;
 }
 
 
@@ -104,7 +133,6 @@ std::ostream& operator<<(std::ostream& output, GeoLoc::SP const& strPtr)
 	return output; 
 }
 
-static std::string emptyString{ "(null)" };
 
 template<typename FieldType>
 void assignEmpty(FieldType& item)
@@ -126,9 +154,9 @@ GeoLoc::GeoLoc(std::string_view csv) noexcept
 		{
 			throw incomplete_line_error{};
 		}
-		std::istringstream input(csv.data());
+		readInfos input{ csv.data(), 0 };
 		size_t index = 0;
-		auto setItem = [&index](std::istringstream& input, auto& item) {
+		auto setItem = [&index](readInfos& input, auto& item) {
 			set<';'>(input, item, index);
 			++index;
 		};
