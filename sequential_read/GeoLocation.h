@@ -31,6 +31,9 @@ public:
 
 	GeoLoc(std::string_view csv) noexcept;
 	void print() const noexcept;
+
+	//TODO: ruleof 5..3. whatever
+	//init,copy,swap,assign.. -Operationen
 };
 
 constexpr const size_t szGeoLoc = sizeof(GeoLoc);

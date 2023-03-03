@@ -23,4 +23,12 @@ __int64 load<read_buffered>(data_type& data) {
 	return _loadBuffered(data);
 }
 
+template<>
+__int64 load<read_async_buffered>(data_type& data) {
+	//extern __int64 _loadBufferedAsync(data_type& data);
+	//return _loadBufferedAsync(data);
+	return 0LL;
+}
+
+
 #endif

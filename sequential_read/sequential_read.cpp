@@ -30,7 +30,7 @@ int main(void)
 
 										   //doubles
 	std::cout.setf(std::cout.fixed);
-	std::cout.precision(9);
+	std::cout.precision(3);
 
 	///*runLoader( load<read_none>, " read none " );
 	//runLoader( load<read_standard>, " read standard warmup.." );
@@ -42,7 +42,7 @@ int main(void)
 	StopWatch stopWatch(std::cout);
 	stopWatch.checkpoint("init done ");
 	data_type data;
-	__int64 linecount=load<read_standard>(data);
+	__int64 linecount=load<read_buffered>(data);
 	std::cout << linecount << " items\n";
 	stopWatch.checkpoint("load done ");
 	

@@ -59,7 +59,10 @@ __int64 _loadBuffered(data_type& data)
 	auto dataPath = prepareDataPath();
 	if (!dataPath) { return 0LL; }
 	__int64 cnt = 0LL;
-	std::array<char, (2 << 11) > buf{};
+	//4K pagesize mal irgendwas
+	constexpr size_t bufSize = (2ull << 11ull) * 16ull;
+	std::vector<char> buf(bufSize);
+
 	std::ifstream input(dataPath->c_str());
 	input.rdbuf()->pubsetbuf(buf.data(), buf.size());
 	for (std::string str; std::getline(input, str);)
