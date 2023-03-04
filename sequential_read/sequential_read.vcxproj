@@ -87,13 +87,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="DataPath.cpp" />
     <ClCompile Include="GeoLocation.cpp" />
     <ClCompile Include="Loaders.cpp" />
     <ClCompile Include="sequential_read.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DataPath.h" />
     <ClInclude Include="GeoLocation.h" />
     <ClInclude Include="Loaders.h" />
+    <ClInclude Include="ReadToToken.h" />
     <ClInclude Include="StopWatch.h" />
     <ClInclude Include="TypeConfigs.h" />
   </ItemGroup>

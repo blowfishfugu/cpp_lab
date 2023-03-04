@@ -1,35 +1,10 @@
 #include "TypeConfigs.h"
-#include <filesystem>
+#include "DataPath.h"
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <optional>
 #include <array>
 
-#include <Windows.h>
-
-namespace fs = std::filesystem;
-
-std::optional<fs::path> prepareDataPath()
-{
-	std::string strFile;
-	strFile.resize(MAX_PATH, '\0');
-	GetModuleFileName(NULL, strFile.data(), MAX_PATH);
-
-	fs::path exePath(strFile);
-	fs::path parentPath(exePath.parent_path());
-	fs::path dataPath = parentPath.parent_path() / "Data" / "berlin_infos.dat";
-	if( !fs::exists(dataPath))
-	{
-#if _MSC_VER>1900 //im vs2017 ist fs::path::value_type ein char .. irgendwo danach aber wchar!
-			std::wcerr << "'" << dataPath.c_str() << "' not found\n";
-#else
-			std::cerr << "'" << dataPath.c_str() << "' not found\n";
-#endif
-		return {};
-	}
-	return dataPath;
-}
 
 __int64 _loadByIfStream(data_type& data)
 {

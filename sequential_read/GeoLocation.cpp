@@ -1,4 +1,6 @@
 #include "GeoLocation.h"
+#include "ReadToToken.h"
+
 #include <sstream>
 #include <iostream>
 #include <map>
@@ -10,44 +12,13 @@ std::ostream& operator<<(std::ostream& output, ignored_field&){	return output; }
 //ignored_field, wird in outstream übersprungen
 std::ostream& operator<<(std::ostream& output, ignored_field const&){ return output; }
 
-//Erweiterbar zum Iterator..
-//++,==
-struct readInfos
-{
-	std::string_view all;
-	int pos = 0;
-};
 
-struct range
-{
-	int begin{};
-	int len{};
-};
-
-range readTo( readInfos& text, char token )
-{
-	int start = text.pos;
-	int len = 0;
-	while( text.pos < text.all.length())
-	{
-		//konsumieren immer
-		char c = text.all[ text.pos ];
-		++text.pos;
-
-		if( c == token )
-		{
-			break;
-		}
-		++len; //token nicht mitzählen
-	}
-	return { start,len };
-}
 
 //String, stream wird konsumiert, direktes befüllen von target
 template<char delim>
 constexpr void set(readInfos& input, GeoLoc::S& target, size_t index)
 {
-	auto range = readTo( input, delim );
+	auto range = readTo<delim>( input );
 	if( range.len==0 ){	return;	}
 	target = input.all.substr( range.begin, range.len );
 }
@@ -56,10 +27,10 @@ constexpr void set(readInfos& input, GeoLoc::S& target, size_t index)
 template<char delim>
 constexpr void set(readInfos& input, GeoLoc::I& target, size_t index)
 {
-	auto range = readTo( input, delim );
+	auto range = readTo<delim>( input );
 	if( range.len == 0 ) { return; }
 	std::string tmp{ input.all.substr( range.begin, range.len ) };
-	target = std::stoi(tmp);
+	target = std::stoi(std::forward<std::string>(tmp));
 	return;
 }
 
@@ -67,10 +38,10 @@ constexpr void set(readInfos& input, GeoLoc::I& target, size_t index)
 template<char delim>
 constexpr void set(readInfos& input, GeoLoc::D& target, size_t index)
 {
-	auto range = readTo( input, delim );
+	auto range = readTo<delim>( input );
 	if( range.len == 0 ) { return; }
 	std::string tmp{ input.all.substr( range.begin, range.len ) };
-	target = std::stod(tmp);
+	target = std::stod(std::forward<std::string>(tmp));
 	return;
 }
 
@@ -78,7 +49,7 @@ constexpr void set(readInfos& input, GeoLoc::D& target, size_t index)
 template<char delim>
 constexpr void set(readInfos& input, ignored_field& target, size_t index)
 {
-	readTo( input, delim );
+	readTo<delim>( input );
 }
 
 static std::string emptyString{ "(null)" };
@@ -91,7 +62,7 @@ std::map<size_t, std::set<GeoLoc::S> > StringPools;
 template<char delim>
 constexpr void set( readInfos& input, GeoLoc::SP& target, size_t index )
 {
-	auto range = readTo( input, delim );
+	auto range = readTo<delim>( input );
 	if( range.len == 0 ) { 
 		target = &emptyString;
 		return; 
