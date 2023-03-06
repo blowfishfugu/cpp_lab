@@ -28,8 +28,7 @@ range readTo(readInfos& text)
 		char c = text.all[text.pos];
 		//Achtung, bugpotenzial, readInfos, darf nicht weiterlaufen, wenn \n vor nächstem ; kommt!
 		++text.pos;
-
-
+		
 		if (c == token)
 		{
 			break;
@@ -49,5 +48,17 @@ range readTo(readInfos& text)
 	}
 	return { start,len };
 }
+
+
+struct my_line_iterator
+{
+	using value_type = std::string_view;
+	using difference_type = std::ptrdiff_t;
+	using reference_type = value_type const&;
+	using pointer_type = const value_type*;
+
+	
+};
+
 
 #endif

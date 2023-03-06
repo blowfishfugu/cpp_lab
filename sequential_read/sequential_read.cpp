@@ -32,12 +32,13 @@ int main(void)
 	std::cout.setf(std::cout.fixed);
 	std::cout.precision(8);
 
-	///*runLoader( load<read_none>, " read none " );
-	//runLoader( load<read_standard>, " read standard warmup.." );
-	//runLoader( load<read_standard>, " read standard " );
-	//runLoader( load<read_mfc>, " read mfc " );
-	//runLoader( load<read_buffered>, " read buffered " );*/
-	
+	runLoader( load<read_none>, " read none " );
+	runLoader( load<read_standard>, " read standard warmup.." );
+	runLoader( load<read_standard>, " read standard " );
+	//runLoader( load<read_mfc>, " read mfc " ); // include afx.h, CStdioStream.ReadLine(CString)
+	runLoader( load<read_buffered>, " read buffered " );
+	runLoader( load<read_stringbuffered>, " read with countlines into string as buffer, no getline" );
+	return 0;	
 
 	StopWatch stopWatch(std::cout);
 	stopWatch.checkpoint("init done ");

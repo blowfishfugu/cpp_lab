@@ -58,6 +58,7 @@ __int64 _loadStringBuffered(data_type& data)
 {
 	auto dataPath = prepareDataPath();
 	if (!dataPath) { return 0LL; }
+
 	std::ifstream input( *dataPath, std::ifstream::binary);
 	if (!input) { return 0LL; }
 
