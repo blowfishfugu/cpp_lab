@@ -125,7 +125,7 @@ GeoLoc::GeoLoc(std::string_view csv) noexcept
 		{
 			throw incomplete_line_error{};
 		}
-		readInfos input{ csv.data(), 0 };
+		readInfos input{ csv, 0 };
 		size_t index = 0;
 		auto setItem = [&index](readInfos& input, auto& item) {
 			set<';'>(input, item, index);

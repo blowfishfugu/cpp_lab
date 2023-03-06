@@ -4,7 +4,9 @@
 #include <fstream>
 #include <string>
 #include <array>
-
+#include <sstream>
+#include <functional>
+#include <execution>
 
 __int64 _loadByIfStream(data_type& data)
 {
@@ -45,6 +47,38 @@ __int64 _loadBuffered(data_type& data)
 		if (str.length() > 0)
 		{
 			data.emplace_back(str);
+			++cnt;
+		}
+	}
+	return cnt;
+}
+
+__int64 _loadStringBuffered(data_type& data)
+{
+	auto dataPath = prepareDataPath();
+	if (!dataPath) { return 0LL; }
+	std::ifstream input( *dataPath, std::ifstream::binary);
+	if (!input) { return 0LL; }
+
+	input.seekg(0, std::ios::end);
+	auto size = input.tellg();
+	input.seekg(0, std::ios::beg);
+
+	std::string strBuf(size, '\0');
+	input.read(strBuf.data(), size);
+	input.close();
+	
+	size_t lineCount = std::count(std::execution::seq, strBuf.cbegin(),strBuf.cend(), '\n');
+	//size_t lineCount = std::count(std::execution::par, strBuf.cbegin(),strBuf.cend(), '\n');
+	data.reserve(lineCount);
+
+	__int64 cnt = 0LL;
+	std::istringstream in(strBuf);
+	for (std::string line; std::getline(in, line);)
+	{
+		if (line.length() > 0)
+		{
+			data.emplace_back(line);
 			++cnt;
 		}
 	}

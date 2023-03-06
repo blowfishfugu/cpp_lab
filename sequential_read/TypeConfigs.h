@@ -10,6 +10,7 @@ enum LoadApproaches : int {
 	read_none,
 	read_standard,
 	read_buffered,
+	read_stringbuffered,
 	read_async_buffered,
 };
 
