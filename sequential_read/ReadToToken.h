@@ -26,7 +26,9 @@ range readTo(readInfos& text)
 	{
 		//konsumieren immer
 		char c = text.all[text.pos];
+		//Achtung, bugpotenzial, readInfos, darf nicht weiterlaufen, wenn \n vor nächstem ; kommt!
 		++text.pos;
+
 
 		if (c == token)
 		{

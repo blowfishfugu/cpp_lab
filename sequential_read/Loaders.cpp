@@ -1,5 +1,6 @@
 #include "TypeConfigs.h"
 #include "DataPath.h"
+#include "ReadToToken.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -73,14 +74,19 @@ __int64 _loadStringBuffered(data_type& data)
 	data.reserve(lineCount);
 
 	__int64 cnt = 0LL;
-	std::istringstream in(strBuf);
-	for (std::string line; std::getline(in, line);)
+	readInfos in{ strBuf,0LL };
+	__int64 lastpos = 0;
+	range pos=readTo<'\n', true>(in);
+	
+	while(lastpos!=in.pos)
 	{
-		if (line.length() > 0)
+		if (pos.len>0)
 		{
-			data.emplace_back(line);
+			data.emplace_back(in.all.substr(pos.begin,pos.len));
 			++cnt;
 		}
+		lastpos = in.pos;
+		pos = readTo<'\n', true>(in);
 	}
 	return cnt;
 }
