@@ -5,6 +5,7 @@
 #include <iostream>
 #include <map>
 #include <set>
+#include <charconv>
 struct incomplete_line_error {};
 
 //ignored_field, wird in outstream übersprungen
@@ -29,8 +30,9 @@ constexpr void set(readInfos& input, GeoLoc::I& target, size_t index)
 {
 	auto range = readTo<delim>( input );
 	if( range.len == 0 ) { return; }
-	std::string tmp{ input.all.substr( range.begin, range.len ) };
-	target = std::stoi(std::forward<std::string>(tmp));
+	std::string_view tmp{ input.all.substr( range.begin, range.len ) };
+	auto result = std::from_chars(&tmp[0], &tmp[tmp.length() - 1], target);
+	//target = std::stoi(std::forward<std::string>(tmp));
 	return;
 }
 
@@ -40,8 +42,9 @@ constexpr void set(readInfos& input, GeoLoc::D& target, size_t index)
 {
 	auto range = readTo<delim>( input );
 	if( range.len == 0 ) { return; }
-	std::string tmp{ input.all.substr( range.begin, range.len ) };
-	target = std::stod(std::forward<std::string>(tmp));
+	std::string_view tmp{ input.all.substr( range.begin, range.len ) };
+	auto result=std::from_chars(&tmp[0], &tmp[tmp.length()-1], target);
+	//target = std::stod(std::forward<std::string_view>(tmp));
 	return;
 }
 
