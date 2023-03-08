@@ -8,17 +8,42 @@
 #include <map>
 #include <set>
 
+extern std::map<size_t, std::set<std::string> > StringPools;
+
+template<typename LoaderFunc>
+void runLoader( LoaderFunc func, std::string_view info )
+{
+	std::cout << "\n start " << info << "\n";
+	StopWatch watch( std::cout );
+	
+	data_type data;
+	__int64 lineCount=func( data );
+	std::cout << lineCount << " items\n";
+	watch.checkpoint( info );
+	StringPools.clear();
+}
+
 
 int main(void)
 {
-	//doubles
+	std::ios_base::sync_with_stdio(false); //optimierung.
+
+										   //doubles
 	std::cout.setf(std::cout.fixed);
-	std::cout.precision(9);
+	std::cout.precision(8);
+
+	runLoader( load<read_none>, " read none " );
+	runLoader( load<read_standard>, " read standard warmup.." );
+	runLoader( load<read_standard>, " read standard " );
+	//runLoader( load<read_mfc>, " read mfc " ); // include afx.h, CStdioStream.ReadLine(CString)
+	runLoader( load<read_buffered>, " read buffered " );
+	runLoader( load<read_stringbuffered>, " read with countlines into string as buffer, no getline" );
+	return 0;	
 
 	StopWatch stopWatch(std::cout);
 	stopWatch.checkpoint("init done ");
 	data_type data;
-	__int64 linecount=load<read_standard>(data);
+	__int64 linecount=load<read_stringbuffered>(data);
 	std::cout << linecount << " items\n";
 	stopWatch.checkpoint("load done ");
 	
@@ -31,7 +56,6 @@ int main(void)
 	}
 	stopWatch.checkpoint("print done ");
 
-	extern std::map<size_t, std::set<std::string> > StringPools;
 	std::cout << "Indexcount " << StringPools.size() << "\n";
 	for (const auto& [index,pool] : StringPools)
 	{

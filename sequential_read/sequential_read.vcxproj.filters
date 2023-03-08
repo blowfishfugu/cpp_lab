@@ -27,6 +27,9 @@
     <ClCompile Include="GeoLocation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DataPath.cpp">
+      <Filter>Data</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StopWatch.h">
@@ -39,6 +42,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GeoLocation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DataPath.h">
+      <Filter>Data</Filter>
+    </ClInclude>
+    <ClInclude Include="ReadToToken.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
