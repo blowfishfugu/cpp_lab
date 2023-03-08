@@ -20,7 +20,7 @@ std::optional<fs::path> prepareDataPath()
 	fs::path dataPath = parentPath.parent_path() / "Data" / "berlin_infos.dat";
 	if( !fs::exists(dataPath))
 	{
-#if _MSC_VER>1900 //im vs2017 ist fs::path::value_type ein char .. irgendwo danach aber wchar!
+#if _MSC_VER>1916 //im vs2017 ist fs::path::value_type ein char .. irgendwo danach aber wchar!
 			std::wcerr << "'" << dataPath.c_str() << "' not found\n";
 #else
 			std::cerr << "'" << dataPath.c_str() << "' not found\n";
