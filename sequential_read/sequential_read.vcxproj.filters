@@ -50,6 +50,9 @@
     <ClInclude Include="ReadToToken.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="LineIterator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\bin\Data\berlin_infos.dat">

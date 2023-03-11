@@ -56,8 +56,9 @@ constexpr void set(readInfos& input, ignored_field& target, size_t index)
 }
 
 static std::string emptyString{ "(null)" };
+static std::string_view vemptyString{ emptyString };
 //strings nicht editierbar, weil sie schlüssel sind.
-std::map<size_t, std::set<GeoLoc::S> > StringPools;
+std::map<size_t, std::set<std::string_view> > StringPools;
 
 //falls hinterher änderbar sein soll (z.B. umlautersetzung), doppelter Platzbedarf
 //std::map<size_t, std::map<GeoLoc::S,GeoLoc::S> > StringPools;
@@ -67,12 +68,12 @@ constexpr void set( readInfos& input, GeoLoc::SP& target, size_t index )
 {
 	auto range = readTo<delim>( input );
 	if( range.len == 0 ) { 
-		target = &emptyString;
+		target = &vemptyString;
 		return; 
 	}
-	std::string tmp{ input.all.substr( range.begin, range.len ) };
+	std::string_view tmp{ input.all.substr( range.begin, range.len ) };
 
-	std::set<GeoLoc::S>& indexPool = StringPools[ index ];
+	std::set<std::string_view>& indexPool = StringPools[ index ];
 	auto f = indexPool.find( tmp );
 	if( f == indexPool.end() )
 	{
@@ -91,7 +92,7 @@ std::ostream& operator<<(std::ostream& output, GeoLoc::SP& strPtr)
 { 
 	if (strPtr)
 	{
-		output << strPtr->c_str();
+		output << strPtr->data();
 	}
 	else { output << ""; }
 	return output; 
@@ -101,7 +102,7 @@ std::ostream& operator<<(std::ostream& output, GeoLoc::SP const& strPtr)
 {
 	if (strPtr)
 	{
-		output << strPtr->c_str();
+		output << strPtr->data();
 	}
 	else { output << ""; }
 	return output; 
@@ -117,10 +118,15 @@ void assignEmpty(FieldType& item)
 template<>
 void assignEmpty(GeoLoc::SP& strPtr)
 {
-	strPtr = &emptyString;
+	strPtr = &vemptyString;
 }
 
-GeoLoc::GeoLoc(std::string_view csv) noexcept
+GeoLoc::GeoLoc(std::string_view const& csv) noexcept
+{
+	this->setLine(csv);
+}
+
+void GeoLoc::setLine(std::string_view const& csv) noexcept
 {
 	try
 	{
@@ -148,9 +154,9 @@ GeoLoc::GeoLoc(std::string_view csv) noexcept
 		//alternative: line_error weiterwerfen, so dass leere elemente nicht in data landen?
 
 		//Vorzeitiger Abbruch, typ SP vorbelegen!
-		std::apply([](auto&&... items){
+		std::apply([](auto&&... items) {
 			(assignEmpty(items), ...);
-			}, raw_data );
+			}, raw_data);
 	}
 }
 
