@@ -110,19 +110,12 @@ __int64 _loadStringBuffered2(data_type& data)
 	std::string_view strRef(strBuf.data(), strBuf.size());
 
 	size_t lineCount = std::count(strRef.cbegin(), strRef.cend(), '\n');
-	//my_line_count::reset();
-	//std::vector<my_line_count> lines;
-	//lines.reserve(lineCount);
-	
-	data.resize(lineCount);
+	data.reserve(lineCount);
 	my_lines bufferView(strRef);
 	
-	//std::copy(bufferView.begin(), bufferView.end(), std::back_inserter(data));
-	size_t i = 0;
 	for( const auto& line: bufferView )
 	{
-		data[i].setLine(line);
-		++i;
+		data.emplace_back(line);
 	};
 
 	

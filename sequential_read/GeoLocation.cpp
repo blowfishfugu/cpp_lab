@@ -20,7 +20,6 @@ template<char delim>
 constexpr void set(readInfos& input, GeoLoc::S& target, size_t index)
 {
 	auto range = readTo<delim>( input );
-	if( range.len==0 ){	return;	}
 	target = input.all.substr( range.begin, range.len );
 }
 
@@ -29,9 +28,8 @@ template<char delim>
 constexpr void set(readInfos& input, GeoLoc::I& target, size_t index)
 {
 	auto range = readTo<delim>( input );
-	if( range.len == 0 ) { return; }
 	std::string_view tmp{ input.all.substr( range.begin, range.len ) };
-	auto result = std::from_chars(&tmp[0], &tmp[tmp.length() - 1], target);
+	auto result = std::from_chars(tmp.data(), tmp.data()+tmp.size(), target);
 	//target = std::stoi(std::forward<std::string>(tmp));
 	return;
 }
@@ -41,9 +39,8 @@ template<char delim>
 constexpr void set(readInfos& input, GeoLoc::D& target, size_t index)
 {
 	auto range = readTo<delim>( input );
-	if( range.len == 0 ) { return; }
 	std::string_view tmp{ input.all.substr( range.begin, range.len ) };
-	auto result=std::from_chars(&tmp[0], &tmp[tmp.length()-1], target);
+	auto result=std::from_chars(tmp.data(), tmp.data()+tmp.size(), target);
 	//target = std::stod(std::forward<std::string_view>(tmp));
 	return;
 }
