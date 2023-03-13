@@ -95,6 +95,7 @@
   <ItemGroup>
     <ClInclude Include="DataPath.h" />
     <ClInclude Include="GeoLocation.h" />
+    <ClInclude Include="LineIterator.h" />
     <ClInclude Include="Loaders.h" />
     <ClInclude Include="ReadToToken.h" />
     <ClInclude Include="StopWatch.h" />

@@ -1,6 +1,7 @@
 #include "TypeConfigs.h"
-#include "DataPath.h"
 #include "ReadToToken.h"
+#include "DataPath.h"
+#include "LineIterator.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -12,14 +13,14 @@
 
 __int64 _loadByIfStream(data_type& data)
 {
-	auto dataPath = prepareDataPath();
+	const auto dataPath = prepareDataPath();
 	if (!dataPath)
 	{
 		return 0LL;
 	}
 	// data.reserve(500000); //kein voranlegen.. mal die "spec" gelesen ;)
 	__int64 cnt = 0LL;
-	std::ifstream input(dataPath->c_str());
+	std::ifstream input(*dataPath);
 	for (std::string str; std::getline(input, str);)
 	{
 		if (str.length() > 0)
@@ -35,7 +36,7 @@ __int64 _loadByIfStream(data_type& data)
 
 __int64 _loadBuffered(data_type& data)
 {
-	auto dataPath = prepareDataPath();
+	const auto dataPath = prepareDataPath();
 	if (!dataPath) { return 0LL; }
 	__int64 cnt = 0LL;
 	//4K pagesize mal irgendwas
@@ -57,14 +58,14 @@ __int64 _loadBuffered(data_type& data)
 
 __int64 _loadStringBuffered(data_type& data)
 {
-	auto dataPath = prepareDataPath();
+	const auto dataPath = prepareDataPath();
 	if (!dataPath) { return 0LL; }
 
 	std::ifstream input( *dataPath, std::ifstream::binary);
 	if (!input) { return 0LL; }
 
 	input.seekg(0, std::ios::end);
-	auto size = input.tellg();
+	const auto size = input.tellg();
 	input.seekg(0, std::ios::beg);
 
 	std::string strBuf(size, '\0');
@@ -91,4 +92,33 @@ __int64 _loadStringBuffered(data_type& data)
 		pos = readTo<'\n', true>(in);
 	}
 	return cnt;
+}
+
+
+__int64 _loadStringBuffered2(data_type& data)
+{
+	const auto dataPath = prepareDataPath();
+	if (!dataPath) { return 0LL; }
+
+	std::ifstream input(*dataPath, std::ifstream::binary);
+	if (!input) { return 0LL; }
+
+	const auto size = fs::file_size(*dataPath);
+	std::string strBuf(size, '\0');
+	input.read(strBuf.data(), size);
+	input.close();
+
+	std::string_view strRef(strBuf.data(), strBuf.size());
+
+	size_t lineCount = std::count(strRef.cbegin(), strRef.cend(), '\n');
+	data.reserve(lineCount);
+	my_lines bufferView(strRef);
+	
+	for( const auto& line: bufferView )
+	{
+		data.emplace_back(line);
+	};
+
+	
+	return data.size();
 }

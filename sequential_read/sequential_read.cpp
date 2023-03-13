@@ -8,7 +8,7 @@
 #include <map>
 #include <set>
 
-extern std::map<size_t, std::set<std::string> > StringPools;
+extern std::map<size_t, std::set<std::string_view> > StringPools;
 
 template<typename LoaderFunc>
 void runLoader( LoaderFunc func, std::string_view info )
@@ -38,12 +38,13 @@ int main(void)
 	//runLoader( load<read_mfc>, " read mfc " ); // include afx.h, CStdioStream.ReadLine(CString)
 	runLoader( load<read_buffered>, " read buffered " );
 	runLoader( load<read_stringbuffered>, " read with countlines into string as buffer, no getline" );
+	runLoader( load<read_stringbuffered2>, "string_view-iterator, fs, no getline" );
 	return 0;	
 
 	StopWatch stopWatch(std::cout);
 	stopWatch.checkpoint("init done ");
 	data_type data;
-	__int64 linecount=load<read_stringbuffered>(data);
+	__int64 linecount=load<read_stringbuffered2>(data);
 	std::cout << linecount << " items\n";
 	stopWatch.checkpoint("load done ");
 	
@@ -68,7 +69,7 @@ int main(void)
 	for (const auto&[index, pool] : StringPools)
 	{
 		poolSize += sizeof(index);
-		for (const std::string& str : pool)
+		for (const auto& str : pool)
 		{
 			poolSize += sizeof(std::string::value_type)*str.size();
 		}

@@ -2,6 +2,8 @@
 #ifndef READTOTOKEN_H
 #define READTOTOKEN_H
 #include <string_view>
+#include <atomic>
+#include <mutex>
 
 //Erweiterbar zum Iterator..
 //++,==
@@ -49,16 +51,6 @@ range readTo(readInfos& text)
 	return { start,len };
 }
 
-
-struct my_line_iterator
-{
-	using value_type = std::string_view;
-	using difference_type = std::ptrdiff_t;
-	using reference_type = value_type const&;
-	using pointer_type = const value_type*;
-
-	
-};
 
 
 #endif

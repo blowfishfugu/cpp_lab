@@ -6,6 +6,6 @@
 #include <optional>
 namespace fs = std::filesystem;
 
-std::optional<fs::path> prepareDataPath();
+const std::optional<fs::path> prepareDataPath();
 
 #endif
