@@ -55,7 +55,7 @@ constexpr void set(readInfos& input, ignored_field& target, size_t index)
 static std::string emptyString{ "(null)" };
 static std::string_view vemptyString{ emptyString };
 //strings nicht editierbar, weil sie schlüssel sind.
-std::map<size_t, std::set<std::string_view> > StringPools;
+std::map<size_t, std::map<std::string,__int64> > StringPools;
 
 //falls hinterher änderbar sein soll (z.B. umlautersetzung), doppelter Platzbedarf
 //std::map<size_t, std::map<GeoLoc::S,GeoLoc::S> > StringPools;
@@ -65,21 +65,20 @@ constexpr void set( readInfos& input, GeoLoc::SP& target, size_t index )
 {
 	auto range = readTo<delim>( input );
 	if( range.len == 0 ) { 
-		target = &vemptyString;
+		target = &emptyString;
 		return; 
 	}
-	std::string_view tmp{ input.all.substr( range.begin, range.len ) };
+	std::string tmp{ input.all.substr( range.begin, range.len ) };
 
-	std::set<std::string_view>& indexPool = StringPools[ index ];
+	std::map<std::string,__int64>& indexPool = StringPools[ index ];
 	auto f = indexPool.find( tmp );
 	if( f == indexPool.end() )
 	{
-		auto inserted = indexPool.insert( tmp );
+		auto inserted = indexPool.emplace( tmp,0LL );
 		f = inserted.first;
 	}
 
-	//nicht schön -> tuple private gemacht, Accessoren müssen const& werden
-	GeoLoc::SP ptr = ( &( *f ) );
+	GeoLoc::SP ptr = ( &(f->first) );
 	target = ptr;
 	return;
 }
@@ -115,7 +114,7 @@ void assignEmpty(FieldType& item)
 template<>
 void assignEmpty(GeoLoc::SP& strPtr)
 {
-	strPtr = &vemptyString;
+	strPtr = &emptyString;
 }
 
 GeoLoc::GeoLoc(std::string_view const& csv) noexcept
@@ -169,4 +168,13 @@ void GeoLoc::print() const noexcept
 		(perItem(items), ...);
 		}, raw_data);
 	std::cout << "\n";
+}
+
+bool operator<(GeoLoc const& l, GeoLoc const& r)
+{
+	extern std::map<size_t, std::map<std::string, __int64> > StringPools;
+	auto lCity=StringPools[0].find(*l.City());
+	auto rCity=StringPools[0].find(*r.City());
+	if (lCity->second < rCity->second) { return true; }
+	return false;
 }
