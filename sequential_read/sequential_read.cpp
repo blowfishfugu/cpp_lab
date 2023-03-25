@@ -84,14 +84,23 @@ static inline void normalize(std::string& str)
 	norm(str, foundpos);
 }
 
-static inline bool houseCompare(std::string const& lhs, std::string const& rhs)
+static inline bool houseCompare(std::string& lhs, std::string& rhs)
 {
-	static constexpr auto split = [](std::string const& str)->std::tuple<__int64,std::string>
+	//10A -> {10,'a'}
+	static constexpr auto split = [](std::string& str)->std::tuple<__int64,std::string>
 	{
 		using namespace std::literals;
 		__int64 num = 0;
 		std::from_chars_result res=std::from_chars(str.data(), str.data() + str.size(), num);
 		if (*res.ptr != 0) {
+			const char* tst = res.ptr;
+			while (*tst != 0) { 
+				if (*tst >= 'A' && *tst <= 'Z')
+				{
+					(*const_cast<char*>(tst)) += ('a' - 'A');
+				}
+				++tst; 
+			}
 			return { num,res.ptr };
 		}
 		return { num, " "s };
@@ -170,7 +179,7 @@ int main(void)
 		else
 		{
 			std::sort(std::execution::par,
-				strings.begin(), strings.end(), [](auto const& lhs, auto const& rhs) {
+				strings.begin(), strings.end(), [](auto& lhs, auto& rhs) {
 					return houseCompare( lhs.second , rhs.second);
 				});
 
