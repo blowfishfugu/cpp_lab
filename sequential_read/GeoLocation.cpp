@@ -55,7 +55,7 @@ constexpr void set(readInfos& input, ignored_field& target, size_t index)
 static std::string emptyString{ "(null)" };
 static std::string_view vemptyString{ emptyString };
 //strings nicht editierbar, weil sie schlüssel sind.
-std::map<size_t, std::map<std::string,__int64> > StringPools;
+PoolType StringPools;
 
 //falls hinterher änderbar sein soll (z.B. umlautersetzung), doppelter Platzbedarf
 //std::map<size_t, std::map<GeoLoc::S,GeoLoc::S> > StringPools;
@@ -70,7 +70,7 @@ constexpr void set( readInfos& input, GeoLoc::SP& target, size_t index )
 	}
 	std::string tmp{ input.all.substr( range.begin, range.len ) };
 
-	std::map<std::string,__int64>& indexPool = StringPools[ index ];
+	auto& indexPool = StringPools[ index ];
 	auto f = indexPool.find( tmp );
 	if( f == indexPool.end() )
 	{
@@ -170,11 +170,24 @@ void GeoLoc::print() const noexcept
 	std::cout << "\n";
 }
 
-bool operator<(GeoLoc const& l, GeoLoc const& r)
+bool operator<(GeoLoc const& lhs, GeoLoc const& rhs)
 {
-	extern std::map<size_t, std::map<std::string, __int64> > StringPools;
-	auto lCity=StringPools[0].find(*l.City());
-	auto rCity=StringPools[0].find(*r.City());
-	if (lCity->second < rCity->second) { return true; }
-	return false;
+	//Stadt-Bezirk-Stadtteil-Plz-Straße-Hausnummer
+	using SortType = std::tuple<__int64, __int64, __int64, __int64, __int64, __int64>;
+
+	static auto ToSortType = [](GeoLoc const& geo, GeoLoc const& ref)->SortType
+	{
+		return { 
+			geo.City()==ref.City()?0:StringPools[GeoLoc::CITY].find(*geo.City())->second,
+			geo.District()==ref.District()?0:StringPools[GeoLoc::DISTRICT].find(*geo.District())->second,
+			geo.UrbanName()==ref.UrbanName()?0:StringPools[GeoLoc::URBANNAME].find(*geo.UrbanName())->second,
+			geo.Zip()==ref.Zip()?0:StringPools[GeoLoc::ZIP].find(*geo.Zip())->second,
+			geo.Street()==ref.Street()?0:StringPools[GeoLoc::STREET].find(*geo.Street())->second,
+			geo.House()==ref.House()?0:StringPools[GeoLoc::HOUSE].find(*geo.House())->second,
+		};
+	};
+
+	SortType left = ToSortType(lhs,rhs);
+	SortType right = ToSortType(rhs,lhs);
+	return left < right;
 }

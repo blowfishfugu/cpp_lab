@@ -10,8 +10,9 @@
 #include <fcntl.h>
 #include <io.h>
 #include <algorithm>
+#include <execution>
 
-extern std::map<size_t, std::map<std::string,__int64> > StringPools;
+extern PoolType StringPools;
 
 template<typename LoaderFunc>
 void runLoader( LoaderFunc func, std::string_view info )
@@ -51,15 +52,6 @@ int main(void)
 	__int64 linecount=load<read_stringbuffered2>(data);
 	std::cout << linecount << " items\n";
 	stopWatch.checkpoint("load done ");
-	
-	size_t offset = data.size() / 30; //30 items gleichverteilt über alles ausgeben
-	if (offset == 0) { offset = 1LL; } // 1/30=0 abfangen
-	
-	for (size_t i = 0; i < data.size(); i += offset)
-	{
-		data[i].print();
-	}
-	stopWatch.checkpoint("print done ");
 
 	std::cout << "Indexcount " << StringPools.size() << "\n";
 	size_t uniqueStrings = 0;
@@ -76,16 +68,41 @@ int main(void)
 	for ( auto&[index, pool] : StringPools)
 	{
 		poolSize += sizeof(index);
-		std::vector<GeoLoc::S> strings;
+		std::vector<std::pair<GeoLoc::S,GeoLoc::S> > strings;
+		strings.reserve(pool.size());
 		for (const auto& str : pool)
 		{
 			poolSize += sizeof(std::string::value_type)*str.first.size();
-			strings.emplace_back(str.first);
+			strings.emplace_back(str.first,str.first);
 		}
-		std::sort(strings.begin(), strings.end());
+
+		if (index != GeoLoc::HOUSE)
+		{
+			std::for_each(std::execution::par, strings.begin(), strings.end(),
+				[](std::pair<std::string,std::string>& normStr) mutable {
+					//TODO: ->inkl umlautregeln ä->ae , ß->ss, è zu e...
+					normStr.second.reserve(normStr.first.length() * 2);
+				}
+			);
+		}
+		else
+		{
+			std::for_each(std::execution::par, strings.begin(), strings.end(),
+				[](std::pair<std::string,std::string>& normStr) mutable {
+					//TODO: ->inkl umlautregeln ä->ae , ß->ss, è zu e...
+					normStr.second.reserve(normStr.first.length() * 2);
+				}
+			);
+		}
+
+		std::sort(
+			strings.begin(), strings.end(), [](auto const& lhs, auto const& rhs) {
+			return lhs.second < rhs.second;
+			});
+
 		for (size_t order = 0; order < strings.size(); ++order)
 		{
-			pool[strings[order]] = order;
+			pool[strings[order].first] = (order+1);
 		}
 	}
 	stopWatch.checkpoint("calculate poolorders done");
@@ -101,7 +118,19 @@ int main(void)
 
 	//Sortieren
 	//Stadt-Bezirk-Stadtteil-Plz-Straße-Hausnummer
-	std::sort(data.begin(), data.end(), [](GeoLoc const& l, GeoLoc const& r) { return l < r; });
+	std::sort(std::execution::par, data.begin(), data.end());
+	stopWatch.checkpoint("sorting datagrid done");
 
-	//->inkl umlautregeln ä->ae , ß->ss, è zu e...
+	size_t offset = data.size() / 30; //30 items gleichverteilt über alles ausgeben
+	if (offset == 0) { offset = 1LL; } // 1/30=0 abfangen
+
+	for (size_t i = 0; i < data.size(); i += offset)
+	{
+		for (size_t region = i; region < (i + 5); ++region)
+		{
+			data[region].print();
+		}
+		std::cout << "\n";
+	}
+	stopWatch.checkpoint("print done ");
 }
