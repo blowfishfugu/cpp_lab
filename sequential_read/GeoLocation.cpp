@@ -55,7 +55,7 @@ constexpr void set(readInfos& input, ignored_field& target, size_t index)
 static std::string emptyString{ "(null)" };
 static std::string_view vemptyString{ emptyString };
 //strings nicht editierbar, weil sie schlüssel sind.
-std::map<size_t, std::set<std::string_view> > StringPools;
+PoolType StringPools;
 
 //falls hinterher änderbar sein soll (z.B. umlautersetzung), doppelter Platzbedarf
 //std::map<size_t, std::map<GeoLoc::S,GeoLoc::S> > StringPools;
@@ -65,21 +65,20 @@ constexpr void set( readInfos& input, GeoLoc::SP& target, size_t index )
 {
 	auto range = readTo<delim>( input );
 	if( range.len == 0 ) { 
-		target = &vemptyString;
+		target = &emptyString;
 		return; 
 	}
-	std::string_view tmp{ input.all.substr( range.begin, range.len ) };
+	std::string tmp{ input.all.substr( range.begin, range.len ) };
 
-	std::set<std::string_view>& indexPool = StringPools[ index ];
+	auto& indexPool = StringPools[ index ];
 	auto f = indexPool.find( tmp );
 	if( f == indexPool.end() )
 	{
-		auto inserted = indexPool.insert( tmp );
+		auto inserted = indexPool.emplace( tmp,0LL );
 		f = inserted.first;
 	}
 
-	//nicht schön -> tuple private gemacht, Accessoren müssen const& werden
-	GeoLoc::SP ptr = ( &( *f ) );
+	GeoLoc::SP ptr = ( &(f->first) );
 	target = ptr;
 	return;
 }
@@ -115,7 +114,7 @@ void assignEmpty(FieldType& item)
 template<>
 void assignEmpty(GeoLoc::SP& strPtr)
 {
-	strPtr = &vemptyString;
+	strPtr = &emptyString;
 }
 
 GeoLoc::GeoLoc(std::string_view const& csv) noexcept
@@ -169,4 +168,26 @@ void GeoLoc::print() const noexcept
 		(perItem(items), ...);
 		}, raw_data);
 	std::cout << "\n";
+}
+
+bool operator<(GeoLoc const& lhs, GeoLoc const& rhs)
+{
+	//Stadt-Bezirk-Stadtteil-Plz-Straße-Hausnummer
+	using SortType = std::tuple<__int64, __int64, __int64, __int64, __int64, __int64>;
+
+	static auto ToSortType = [](GeoLoc const& geo, GeoLoc const& ref)->SortType
+	{
+		return { 
+			geo.City()==ref.City()?0:StringPools[GeoLoc::CITY].find(*geo.City())->second,
+			geo.District()==ref.District()?0:StringPools[GeoLoc::DISTRICT].find(*geo.District())->second,
+			geo.UrbanName()==ref.UrbanName()?0:StringPools[GeoLoc::URBANNAME].find(*geo.UrbanName())->second,
+			geo.Zip()==ref.Zip()?0:StringPools[GeoLoc::ZIP].find(*geo.Zip())->second,
+			geo.Street()==ref.Street()?0:StringPools[GeoLoc::STREET].find(*geo.Street())->second,
+			geo.House()==ref.House()?0:StringPools[GeoLoc::HOUSE].find(*geo.House())->second,
+		};
+	};
+
+	SortType left = ToSortType(lhs,rhs);
+	SortType right = ToSortType(rhs,lhs);
+	return left < right;
 }

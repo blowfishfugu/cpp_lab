@@ -11,6 +11,8 @@
 #include <functional>
 #include <execution>
 
+#include <future>
+
 __int64 _loadByIfStream(data_type& data)
 {
 	const auto dataPath = prepareDataPath();
@@ -114,6 +116,7 @@ __int64 _loadStringBuffered2(data_type& data)
 	data.reserve(lineCount);
 	my_lines bufferView(strRef);
 	
+	//achtung: std::copy + backinserter -> GeoLoc benötigt einen operator=(string_view)
 	for( const auto& line: bufferView )
 	{
 		data.emplace_back(line);
@@ -122,3 +125,48 @@ __int64 _loadStringBuffered2(data_type& data)
 	
 	return data.size();
 }
+
+/*
+__int64 _loadStringFutured(data_type& data)
+{
+	const auto dataPath = prepareDataPath();
+	if (!dataPath) { return 0LL; }
+
+	std::ifstream input(*dataPath, std::ifstream::binary);
+	if (!input) { return 0LL; }
+
+	const auto size = fs::file_size(*dataPath);
+	std::string strBuf(size, '\0');
+	input.read(strBuf.data(), size);
+	input.close();
+
+	std::string_view strRef(strBuf.data(), strBuf.size());
+
+	size_t lineCount = std::count(strRef.cbegin(), strRef.cend(), '\n');
+	data.resize(lineCount);
+	my_lines bufferView(strRef);
+	//TODO: copy bufferView to lines ->back_inserter ans laufen bekommen.
+	std::vector<my_line_count> lines;
+	lines.reserve(lineCount);
+
+	constexpr int iTasks = 16;
+	std::vector<std::future<bool>> tasks(iTasks);
+
+	auto r_func = [&lines, &data](auto start, auto end) {
+		for (; start < end; ++start)
+		{
+			data.emplace_back(lines[start]);
+		}
+		return true;
+	};
+
+	for (auto[i, Cnt] = std::make_pair(0u, data.size()); i < iTasks; ++i)
+	{
+		tasks[i] = std::async(r_func, i*Cnt / iTasks, ((i+1)==iTasks)?Cnt:(i+1)*Cnt/iTasks );
+	}
+
+	tasks[0].get();
+
+	return data.size();
+}
+*/
