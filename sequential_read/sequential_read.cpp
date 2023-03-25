@@ -11,6 +11,7 @@
 #include <io.h>
 #include <algorithm>
 #include <execution>
+#include <charconv>
 
 extern PoolType StringPools;
 
@@ -27,6 +28,78 @@ void runLoader( LoaderFunc func, std::string_view info )
 	StringPools.clear();
 }
 
+static std::map<unsigned char, __int64> foundChars;
+
+static inline void normalize(std::string& str)
+{
+	//for (const unsigned char c : str)
+	//{
+	//	if (c >= 'a' && c <= 'z') { continue; }
+	//	if (c >= 'A'&& c <= 'Z') { continue; }
+	//	if (c >= '0' && c <= '9') { continue; }
+	//	if (c < 0xC4) { continue; } //'Ä'
+	//	foundChars[c]++;
+	//}
+
+	/*
+	ß : 0xDF : 4443
+	ü : 0xFC : 477
+	ö : 0xF6 : 403
+	ä : 0xE4 : 259
+	é : 0xE9 : 25
+	è : 0xE8 : 6
+	Ä : 0xC4 : 3
+	Ö : 0xD6 : 3
+	Ü : 0xDC : 3
+	á : 0xE1 : 3
+	ë : 0xEB : 1
+	*/
+
+	//gnadenlos entnommen aus adecc-repository, 
+	//reihenfolge anhand vorab-histogramm, straße+äöü sind im deutschen adressraum (nicht nur berlin) in überhand
+	using namespace std::literals;
+	static const std::string special = "ßüöäéèÄÖÜáëà";
+	static const std::unordered_map<char, std::string> new_values = {
+		{'ß',"ss"s},
+		{'ü',"ue"s},
+		{'ö',"oe"s},
+		{'ä',"ae"s},
+		{'é',"e"s},
+		{'è',"e"s},
+		{'Ä',"Ae"s},
+		{'Ö',"Oe"s},
+		{'Ü',"Ue"s},
+		{'á',"a"s},
+		{'ë',"e"s},
+		{'à',"a"s},
+	};
+	static constexpr auto norm = [](std::string& str, size_t pos) noexcept {
+		do {
+			str.replace(pos, 1, new_values.find(str[pos])->second);
+		} while ((pos = str.find_first_of(special, pos)) != std::string::npos);
+	};
+
+	size_t foundpos = str.find_first_of(special);
+	if (foundpos == std::string::npos) { return; }
+	norm(str, foundpos);
+}
+
+static inline bool houseCompare(std::string const& lhs, std::string const& rhs)
+{
+	static constexpr auto split = [](std::string const& str)->std::tuple<__int64,std::string>
+	{
+		using namespace std::literals;
+		__int64 num = 0;
+		std::from_chars_result res=std::from_chars(str.data(), str.data() + str.size(), num);
+		if (*res.ptr != 0) {
+			return { num,res.ptr };
+		}
+		return { num, " "s };
+	};
+	auto left = split(lhs);
+	auto right = split(rhs);
+	return left < right;
+}
 
 int main(void)
 {
@@ -76,29 +149,32 @@ int main(void)
 			strings.emplace_back(str.first,str.first);
 		}
 
+		//normalized sort
 		if (index != GeoLoc::HOUSE)
 		{
 			std::for_each(std::execution::par, strings.begin(), strings.end(),
-				[](std::pair<std::string,std::string>& normStr) mutable {
+				[](std::pair<std::string, std::string>& normStr) mutable {
 					//TODO: ->inkl umlautregeln ä->ae , ß->ss, è zu e...
 					normStr.second.reserve(normStr.first.length() * 2);
+					normalize(normStr.second);
 				}
 			);
+
+			std::sort(std::execution::par,
+				strings.begin(), strings.end(), [](auto const& lhs, auto const& rhs) {
+					return lhs.second < rhs.second;
+				});
+		
 		}
+		//splitted sort on <number, optional character>
 		else
 		{
-			std::for_each(std::execution::par, strings.begin(), strings.end(),
-				[](std::pair<std::string,std::string>& normStr) mutable {
-					//TODO: ->inkl umlautregeln ä->ae , ß->ss, è zu e...
-					normStr.second.reserve(normStr.first.length() * 2);
-				}
-			);
-		}
+			std::sort(std::execution::par,
+				strings.begin(), strings.end(), [](auto const& lhs, auto const& rhs) {
+					return houseCompare( lhs.second , rhs.second);
+				});
 
-		std::sort(
-			strings.begin(), strings.end(), [](auto const& lhs, auto const& rhs) {
-			return lhs.second < rhs.second;
-			});
+		}
 
 		for (size_t order = 0; order < strings.size(); ++order)
 		{
@@ -106,6 +182,17 @@ int main(void)
 		}
 	}
 	stopWatch.checkpoint("calculate poolorders done");
+	///*FILE* fp = nullptr;
+	//fopen_s(&fp, "C:\\Temp\\histogram.txt", "w");
+	//if (fp)
+	//{
+	//	for ( const auto& it : foundChars)
+	//	{
+	//		fprintf_s( fp, "%c : 0x%.2X : %I64d\n", it.first, it.first, it.second );
+	//	}
+	//}
+	//fp && fclose(fp);*/
+
 
 	std::cout << "ObjectSize:\t" << objectsSize << "\n";
 	std::cout << "PoolSize:\t" << poolSize << "\n";
@@ -121,12 +208,12 @@ int main(void)
 	std::sort(std::execution::par, data.begin(), data.end());
 	stopWatch.checkpoint("sorting datagrid done");
 
-	size_t offset = data.size() / 30; //30 items gleichverteilt über alles ausgeben
-	if (offset == 0) { offset = 1LL; } // 1/30=0 abfangen
+	size_t offset = data.size() / 20; //20 items gleichverteilt über alles ausgeben
+	if (offset == 0) { offset = 1LL; } // 1/20=0 abfangen
 
 	for (size_t i = 0; i < data.size(); i += offset)
 	{
-		for (size_t region = i; region < (i + 5); ++region)
+		for (size_t region = i; region < (i + 8); ++region)
 		{
 			data[region].print();
 		}
