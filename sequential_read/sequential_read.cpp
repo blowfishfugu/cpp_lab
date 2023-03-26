@@ -28,7 +28,7 @@ void runLoader( LoaderFunc func, std::string_view info )
 	StringPools.clear();
 }
 
-static std::map<unsigned char, __int64> foundChars;
+//static std::map<unsigned char, __int64> foundChars;
 
 static inline void normalize(std::string& str)
 {
@@ -110,6 +110,88 @@ static inline bool houseCompare(std::string& lhs, std::string& rhs)
 	return left < right;
 }
 
+static inline void inspectIndex()
+{
+	std::cout << "Indexcount " << StringPools.size() << "\n";
+	size_t uniqueStrings = 0;
+	for (const auto&[index, pool] : StringPools)
+	{
+		std::cout << index << "\t Uniques: " << pool.size() << "\n";
+		uniqueStrings += pool.size();
+	}
+	std::cout << "Unique string count:\t" << uniqueStrings << "\n";
+}
+
+static inline void organizeIndex()
+{
+	for (auto&[index, pool] : StringPools)
+	{
+			std::vector<std::pair<GeoLoc::S, GeoLoc::S> > strings;
+			strings.reserve(pool.size());
+			for (const auto& poolItem : pool)
+			{
+				strings.emplace_back(poolItem.first.str, poolItem.first.str);
+			}
+
+			//normalized sort
+			if (index != GeoLoc::HOUSE)
+			{
+				std::for_each(
+					std::execution::par,
+					strings.begin(), strings.end(),
+					[](std::pair<std::string, std::string>& normStr) mutable {
+						//TODO: ->inkl umlautregeln ä->ae , ß->ss, è zu e...
+						normalize(normStr.second);
+					}
+				);
+
+				std::sort(
+					std::execution::par,
+					strings.begin(), strings.end(), 
+					[](auto const& lhs, auto const& rhs) {
+						return lhs.second < rhs.second;
+					});
+
+			}
+			//splitted sort on <number, optional character>
+			else
+			{
+				std::sort(
+					std::execution::par,
+					strings.begin(), strings.end(),
+					[](auto& lhs, auto& rhs) {
+						return houseCompare(lhs.second, rhs.second);
+					});
+
+			}
+
+			for (size_t order = 0; order < strings.size(); ++order)
+			{
+				if (auto it = pool.find(strings[order].first); it != pool.end())
+				{
+					it->second = (order + 1);
+					it->first.order = (order + 1);
+				}
+			}
+	}
+}
+
+static void printSamples(data_type const& data, const size_t sampleCount=20, const size_t itemsPerSample=8)
+{
+	size_t offset = data.size() / sampleCount; //20 items gleichverteilt über alles ausgeben
+	if (offset == 0) { offset = 1LL; } // 1/20=0 abfangen
+
+	for (size_t i = 0; i < data.size(); i += offset)
+	{
+		const size_t uboundSample = i + itemsPerSample;
+		for (size_t region = i; region < uboundSample; ++region)
+		{
+			data[region].print();
+		}
+		std::cout << "\n";
+	}
+}
+
 int main(void)
 {
 	//std::ios_base::sync_with_stdio(false); //optimierung.
@@ -130,73 +212,18 @@ int main(void)
 
 	StopWatch stopWatch(std::cout);
 	stopWatch.checkpoint("init done ");
+
 	data_type data;
 	__int64 linecount=load<read_stringbuffered2>(data);
 	std::cout << linecount << " items\n";
 	stopWatch.checkpoint("load done ");
 
-	std::cout << "Indexcount " << StringPools.size() << "\n";
-	size_t uniqueStrings = 0;
-	for (const auto& [index,pool] : StringPools)
-	{
-		std::cout << index << "\t Uniques: " << pool.size() << "\n";
-		uniqueStrings += pool.size();
-	}
-	std::cout << "Unique string count:\t" << uniqueStrings << "\n";
+	inspectIndex();
 	stopWatch.checkpoint("print uniques done");
 
-	size_t objectsSize = sizeof(GeoLoc)*data.size();
-	size_t poolSize = 0;
-	for ( auto&[index, pool] : StringPools)
-	{
-		poolSize += sizeof(index);
-		std::vector<std::pair<GeoLoc::S,GeoLoc::S> > strings;
-		strings.reserve(pool.size());
-		for (const auto& poolItem : pool)
-		{
-			poolSize += sizeof(std::string::value_type)*poolItem.first.str.size();
-			poolSize += sizeof(IndexedString);
-			strings.emplace_back(poolItem.first.str, poolItem.first.str);
-		}
-
-		//normalized sort
-		if (index != GeoLoc::HOUSE)
-		{
-			std::for_each(std::execution::par, strings.begin(), strings.end(),
-				[](std::pair<std::string, std::string>& normStr) mutable {
-					//TODO: ->inkl umlautregeln ä->ae , ß->ss, è zu e...
-					normStr.second.reserve(normStr.first.length() * 2);
-					normalize(normStr.second);
-				}
-			);
-
-			std::sort(std::execution::par,
-				strings.begin(), strings.end(), [](auto const& lhs, auto const& rhs) {
-					return lhs.second < rhs.second;
-				});
-		
-		}
-		//splitted sort on <number, optional character>
-		else
-		{
-			std::sort(std::execution::par,
-				strings.begin(), strings.end(), [](auto& lhs, auto& rhs) {
-					return houseCompare( lhs.second , rhs.second);
-				});
-
-		}
-
-		for (size_t order = 0; order < strings.size(); ++order)
-		{
-			
-			if (auto it = pool.find(strings[order].first); it != pool.end())
-			{
-				it->second = (order+1);
-				it->first.order = (order + 1);
-			}
-		}
-	}
+	organizeIndex();
 	stopWatch.checkpoint("calculate poolorders done");
+	
 	///*FILE* fp = nullptr;
 	//fopen_s(&fp, "C:\\Temp\\histogram.txt", "w");
 	//if (fp)
@@ -208,11 +235,6 @@ int main(void)
 	//}
 	//fp && fclose(fp);*/
 
-
-	std::cout << "ObjectSize:\t" << objectsSize << "\n";
-	std::cout << "PoolSize:\t" << poolSize << "\n";
-
-
 	constexpr std::tuple<double, double> fernsehturm{ 52.5208182, 13.4072251 };
 
 
@@ -223,16 +245,6 @@ int main(void)
 	std::sort(std::execution::par, data.begin(), data.end());
 	stopWatch.checkpoint("sorting datagrid done");
 
-	size_t offset = data.size() / 20; //20 items gleichverteilt über alles ausgeben
-	if (offset == 0) { offset = 1LL; } // 1/20=0 abfangen
-
-	for (size_t i = 0; i < data.size(); i += offset)
-	{
-		for (size_t region = i; region < (i + 8); ++region)
-		{
-			data[region].print();
-		}
-		std::cout << "\n";
-	}
+	printSamples(data, 10, 8);
 	stopWatch.checkpoint("print done ");
 }
