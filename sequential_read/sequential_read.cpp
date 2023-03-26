@@ -152,10 +152,10 @@ int main(void)
 		poolSize += sizeof(index);
 		std::vector<std::pair<GeoLoc::S,GeoLoc::S> > strings;
 		strings.reserve(pool.size());
-		for (const auto& str : pool)
+		for (const auto& poolItem : pool)
 		{
-			poolSize += sizeof(std::string::value_type)*str.first.size();
-			strings.emplace_back(str.first,str.first);
+			poolSize += sizeof(std::string::value_type)*poolItem.first.str.size();
+			strings.emplace_back(poolItem.first.str, poolItem.first.str);
 		}
 
 		//normalized sort
@@ -187,7 +187,12 @@ int main(void)
 
 		for (size_t order = 0; order < strings.size(); ++order)
 		{
-			pool[strings[order].first] = (order+1);
+			
+			if (auto it = pool.find(strings[order].first); it != pool.end())
+			{
+				it->second = (order+1);
+				it->first.order = (order + 1);
+			}
 		}
 	}
 	stopWatch.checkpoint("calculate poolorders done");

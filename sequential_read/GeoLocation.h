@@ -8,7 +8,28 @@
 
 struct ignored_field{};
 
+struct IndexedString {
+	std::string str{};
+	mutable __int64 order = 0;
+	IndexedString(std::string const& val) : str(val) {};
+	IndexedString(std::string_view const& val) : str(val) {};
+};
 
+inline bool operator==(IndexedString const& l, IndexedString const& r){
+	return l.str == r.str;
+}
+
+inline bool operator!=(IndexedString const& l, IndexedString const& r){
+	return !(l == r);
+}
+
+template<>
+struct std::hash<IndexedString>{	
+	[[nodiscard]] size_t operator()(const IndexedString _Keyval) const noexcept{	
+		return std::hash<std::string>()(_Keyval.str);	
+	}
+};
+using PoolType = std::map<size_t, std::unordered_map<IndexedString, __int64> >;
 
 struct GeoLoc
 {
@@ -18,10 +39,11 @@ struct GeoLoc
 	using X = ignored_field;
 	using SP = const std::string*;
 	using LL = __int64;
+	using ISP = const IndexedString*;
 private:
 	//tuple hat offene Pointer-> private machen.
 	//Berlin;Aachener Straﬂe;1;10713;Charlottenburg-Wilmersdorf;Wilmersdorf;Wilmersdorf;52.482187140;13.318354210
-	std::tuple<SP, SP, SP, SP, SP, SP, SP, D, D> raw_data{};
+	std::tuple<ISP, ISP, ISP, ISP, ISP, ISP, ISP, D, D> raw_data{};
 	
 	//map-less: w‰re 200ms schneller zu lesen
 	//std::tuple<S, S, S, S, S, S, S, D, D> raw_data{};
@@ -38,13 +60,13 @@ public:
 		LATITUDE,
 		LONGITUDE
 	};
-	const std::string* const City() const noexcept { return std::get<0>(raw_data); }
-	const std::string* const Street() const noexcept { return std::get<1>(raw_data); }
-	const std::string* const House() const noexcept { return std::get<2>(raw_data); }
-	const std::string* const Zip() const noexcept { return std::get<3>(raw_data); }
-	const std::string* const UrbanName() const noexcept { return std::get<4>(raw_data); }
-	const std::string* const OldName() const noexcept { return std::get<5>(raw_data); }
-	const std::string* const District() const noexcept { return std::get<6>(raw_data); }
+	ISP const City() const noexcept { return std::get<0>(raw_data); }
+	ISP const Street() const noexcept { return std::get<1>(raw_data); }
+	ISP const House() const noexcept { return std::get<2>(raw_data); }
+	ISP const Zip() const noexcept { return std::get<3>(raw_data); }
+	ISP const UrbanName() const noexcept { return std::get<4>(raw_data); }
+	ISP const OldName() const noexcept { return std::get<5>(raw_data); }
+	ISP const District() const noexcept { return std::get<6>(raw_data); }
 	D const& Latitude() const noexcept { return std::get<7>(raw_data); }
 	D const& Longitude() const noexcept { return std::get<8>(raw_data); }
 
@@ -72,4 +94,3 @@ public:
 };
 
 constexpr const size_t szGeoLoc = sizeof(GeoLoc);
-using PoolType = std::map<size_t, std::unordered_map<std::string, __int64> >;
