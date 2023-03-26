@@ -54,6 +54,7 @@ constexpr void set(readInfos& input, ignored_field& target, size_t index)
 
 static std::string emptyString{ "(null)" };
 static std::string_view vemptyString{ emptyString };
+static IndexedString emptyIndexString{ emptyString };
 //strings nicht editierbar, weil sie schlüssel sind.
 PoolType StringPools;
 
@@ -83,6 +84,29 @@ constexpr void set( readInfos& input, GeoLoc::SP& target, size_t index )
 	return;
 }
 
+template<char delim>
+constexpr void set(readInfos& input, GeoLoc::ISP& target, size_t index)
+{
+	auto range = readTo<delim>(input);
+	if (range.len == 0) {
+		target = &emptyIndexString;
+		return;
+	}
+	IndexedString tmp{ input.all.substr(range.begin, range.len) };
+
+	auto& indexPool = StringPools[index];
+	auto f = indexPool.find(tmp);
+	if (f == indexPool.end())
+	{
+		auto inserted = indexPool.emplace(tmp, 0LL);
+		f = inserted.first;
+	}
+
+	GeoLoc::ISP ptr = (&(f->first));
+	target = ptr;
+	return;
+}
+
 
 std::ostream& operator<<(std::ostream& output, GeoLoc::SP& strPtr) 
 { 
@@ -102,6 +126,26 @@ std::ostream& operator<<(std::ostream& output, GeoLoc::SP const& strPtr)
 	}
 	else { output << ""; }
 	return output; 
+}
+
+std::ostream& operator<<(std::ostream& output, GeoLoc::ISP& strPtr)
+{
+	if (strPtr)
+	{
+		output << strPtr->str.data();
+	}
+	else { output << ""; }
+	return output;
+}
+
+std::ostream& operator<<(std::ostream& output, GeoLoc::ISP const& strPtr)
+{
+	if (strPtr)
+	{
+		output << strPtr->str.data();
+	}
+	else { output << ""; }
+	return output;
 }
 
 
@@ -170,7 +214,7 @@ void GeoLoc::print() const noexcept
 	std::cout << "\n";
 }
 
-bool operator<(GeoLoc const& lhs, GeoLoc const& rhs)
+bool oldLesserOperator(GeoLoc const& lhs, GeoLoc const& rhs)
 {
 	//Stadt-Bezirk-Stadtteil-Plz-Straße-Hausnummer
 	using SortType = std::tuple<__int64, __int64, __int64, __int64, __int64, __int64>;
@@ -189,5 +233,27 @@ bool operator<(GeoLoc const& lhs, GeoLoc const& rhs)
 
 	SortType left = ToSortType(lhs,rhs);
 	SortType right = ToSortType(rhs,lhs);
+	return left < right;
+}
+
+bool operator<(GeoLoc const& lhs, GeoLoc const& rhs)
+{
+	//Stadt-Bezirk-Stadtteil-Plz-Straße-Hausnummer
+	using SortType = std::tuple<__int64, __int64, __int64, __int64, __int64, __int64>;
+
+	static auto ToSortType = [](GeoLoc const& geo)->SortType
+	{
+		return {
+			geo.City()->order,
+			geo.District()->order,
+			geo.UrbanName()->order,
+			geo.Zip()->order,
+			geo.Street()->order,
+			geo.House()->order,
+		};
+	};
+
+	SortType left = ToSortType(lhs);
+	SortType right = ToSortType(rhs);
 	return left < right;
 }
