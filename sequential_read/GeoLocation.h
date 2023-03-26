@@ -25,7 +25,7 @@ inline bool operator!=(IndexedString const& l, IndexedString const& r){
 
 template<>
 struct std::hash<IndexedString>{	
-	[[nodiscard]] size_t operator()(const IndexedString _Keyval) const noexcept{	
+	[[nodiscard]] size_t operator()(const IndexedString& _Keyval) const noexcept{
 		return std::hash<std::string>()(_Keyval.str);	
 	}
 };

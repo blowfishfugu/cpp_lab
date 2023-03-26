@@ -155,6 +155,7 @@ int main(void)
 		for (const auto& poolItem : pool)
 		{
 			poolSize += sizeof(std::string::value_type)*poolItem.first.str.size();
+			poolSize += sizeof(IndexedString);
 			strings.emplace_back(poolItem.first.str, poolItem.first.str);
 		}
 
