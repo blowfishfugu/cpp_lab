@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <execution>
 #include <charconv>
-#include <functional>
+#include <functional> //std::function
 
 extern PoolType StringPools;
 
