@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <execution>
 #include <charconv>
+#include <functional>
 
 extern PoolType StringPools;
 
@@ -175,7 +176,18 @@ static inline void organizeIndex()
 	}
 }
 
-static void printSamples(data_type const& data, const size_t sampleCount=20, const size_t itemsPerSample=8)
+std::ostream& operator<<(std::ostream& output, GeoLoc const& loc)
+{
+	loc.print(output);
+	return output;
+}
+std::ostream& operator<<(std::ostream& output, GeoLoc* loc)
+{
+	loc->print(output);
+	return output;
+}
+
+static auto printSamples = [](auto const& data, const size_t sampleCount = 20, const size_t itemsPerSample = 8)
 {
 	size_t offset = data.size() / sampleCount; //20 items gleichverteilt über alles ausgeben
 	if (offset == 0) { offset = 1LL; } // 1/20=0 abfangen
@@ -183,31 +195,14 @@ static void printSamples(data_type const& data, const size_t sampleCount=20, con
 	for (size_t i = 0; i < data.size(); i += offset)
 	{
 		const size_t uboundSample = i + itemsPerSample;
-		for (size_t region = i; region < uboundSample && region<data.size(); ++region)
+		for (size_t region = i; region < uboundSample && region < data.size(); ++region)
 		{
-			data[region].print();
+			std::cout << data[region];
 		}
 		std::cout << "\n";
 	}
 	std::cout << "---\n";
-}
-
-static void printSamples(view_type const& data, const size_t sampleCount = 20, const size_t itemsPerSample = 8)
-{
-	size_t offset = data.size() / sampleCount; //20 items gleichverteilt über alles ausgeben
-	if (offset == 0) { offset = 1LL; } // 1/20=0 abfangen
-
-	for (size_t i = 0; i < data.size(); i += offset)
-	{
-		const size_t uboundSample = i + itemsPerSample;
-		for (size_t region = i; region < uboundSample && region<data.size(); ++region)
-		{
-			data[region]->print();
-		}
-		std::cout << "\n";
-	}
-	std::cout << "---\n";
-}
+};
 
 static std::map<unsigned char, __int64> foundChars;
 static void histOfChars()

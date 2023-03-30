@@ -80,7 +80,7 @@ public:
 
 	GeoLoc(std::string_view const& csv) noexcept;
 	void setLine(std::string_view const& csv) noexcept;
-	void print() const noexcept;
+	void print(std::ostream& output) const noexcept;
 
 	friend bool operator<(GeoLoc const& l, GeoLoc const& r);
 	
