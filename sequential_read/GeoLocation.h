@@ -25,7 +25,7 @@ inline bool operator!=(IndexedString const& l, IndexedString const& r){
 
 template<>
 struct std::hash<IndexedString>{	
-	[[nodiscard]] size_t operator()(const IndexedString _Keyval) const noexcept{	
+	[[nodiscard]] size_t operator()(const IndexedString& _Keyval) const noexcept{
 		return std::hash<std::string>()(_Keyval.str);	
 	}
 };
@@ -54,7 +54,7 @@ public:
 		STREET,
 		HOUSE,
 		ZIP,
-		URBANNAME,
+		URBANUNIT,
 		OLDNAME,
 		DISTRICT,
 		LATITUDE,
@@ -64,8 +64,8 @@ public:
 	ISP const Street() const noexcept { return std::get<1>(raw_data); }
 	ISP const House() const noexcept { return std::get<2>(raw_data); }
 	ISP const Zip() const noexcept { return std::get<3>(raw_data); }
-	ISP const UrbanName() const noexcept { return std::get<4>(raw_data); }
-	ISP const OldName() const noexcept { return std::get<5>(raw_data); }
+	ISP const UrbanUnit() const noexcept { return std::get<4>(raw_data); }
+	ISP const OldUnit() const noexcept { return std::get<5>(raw_data); }
 	ISP const District() const noexcept { return std::get<6>(raw_data); }
 	D const& Latitude() const noexcept { return std::get<7>(raw_data); }
 	D const& Longitude() const noexcept { return std::get<8>(raw_data); }

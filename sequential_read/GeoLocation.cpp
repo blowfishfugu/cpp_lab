@@ -224,7 +224,7 @@ bool oldLesserOperator(GeoLoc const& lhs, GeoLoc const& rhs)
 		return { 
 			geo.City()==ref.City()?0:StringPools[GeoLoc::CITY].find(*geo.City())->second,
 			geo.District()==ref.District()?0:StringPools[GeoLoc::DISTRICT].find(*geo.District())->second,
-			geo.UrbanName()==ref.UrbanName()?0:StringPools[GeoLoc::URBANNAME].find(*geo.UrbanName())->second,
+			geo.UrbanUnit()==ref.UrbanUnit()?0:StringPools[GeoLoc::URBANUNIT].find(*geo.UrbanUnit())->second,
 			geo.Zip()==ref.Zip()?0:StringPools[GeoLoc::ZIP].find(*geo.Zip())->second,
 			geo.Street()==ref.Street()?0:StringPools[GeoLoc::STREET].find(*geo.Street())->second,
 			geo.House()==ref.House()?0:StringPools[GeoLoc::HOUSE].find(*geo.House())->second,
@@ -246,7 +246,7 @@ bool operator<(GeoLoc const& lhs, GeoLoc const& rhs)
 		return {
 			geo.City()->order,
 			geo.District()->order,
-			geo.UrbanName()->order,
+			geo.UrbanUnit()->order,
 			geo.Zip()->order,
 			geo.Street()->order,
 			geo.House()->order,
