@@ -28,7 +28,6 @@ void runLoader( LoaderFunc func, std::string_view info )
 	StringPools.clear();
 }
 
-//static std::map<unsigned char, __int64> foundChars;
 
 static inline void normalize(std::string& str)
 {
@@ -184,12 +183,45 @@ static void printSamples(data_type const& data, const size_t sampleCount=20, con
 	for (size_t i = 0; i < data.size(); i += offset)
 	{
 		const size_t uboundSample = i + itemsPerSample;
-		for (size_t region = i; region < uboundSample; ++region)
+		for (size_t region = i; region < uboundSample && region<data.size(); ++region)
 		{
 			data[region].print();
 		}
 		std::cout << "\n";
 	}
+	std::cout << "---\n";
+}
+
+static void printSamples(view_type const& data, const size_t sampleCount = 20, const size_t itemsPerSample = 8)
+{
+	size_t offset = data.size() / sampleCount; //20 items gleichverteilt ¸ber alles ausgeben
+	if (offset == 0) { offset = 1LL; } // 1/20=0 abfangen
+
+	for (size_t i = 0; i < data.size(); i += offset)
+	{
+		const size_t uboundSample = i + itemsPerSample;
+		for (size_t region = i; region < uboundSample && region<data.size(); ++region)
+		{
+			data[region]->print();
+		}
+		std::cout << "\n";
+	}
+	std::cout << "---\n";
+}
+
+static std::map<unsigned char, __int64> foundChars;
+static void histOfChars()
+{
+	FILE* fp = nullptr;
+	fopen_s(&fp, "C:\\Temp\\histogram.txt", "w");
+	if (fp)
+	{
+		for ( const auto& it : foundChars)
+		{
+			fprintf_s( fp, "%c : 0x%.2X : %I64d\n", it.first, it.first, it.second );
+		}
+	}
+	fp && fclose(fp);
 }
 
 int main(void)
@@ -213,7 +245,7 @@ int main(void)
 	StopWatch stopWatch(std::cout);
 	stopWatch.checkpoint("init done ");
 
-	data_type data;
+	static data_type data;
 	__int64 linecount=load<read_stringbuffered2>(data);
 	std::cout << linecount << " items\n";
 	stopWatch.checkpoint("load done ");
@@ -224,16 +256,18 @@ int main(void)
 	organizeIndex();
 	stopWatch.checkpoint("calculate poolorders done");
 	
-	///*FILE* fp = nullptr;
-	//fopen_s(&fp, "C:\\Temp\\histogram.txt", "w");
-	//if (fp)
-	//{
-	//	for ( const auto& it : foundChars)
-	//	{
-	//		fprintf_s( fp, "%c : 0x%.2X : %I64d\n", it.first, it.first, it.second );
-	//	}
-	//}
-	//fp && fclose(fp);*/
+	//histOfChars();
+	constexpr const size_t viewCount = 10LL;
+	static std::array<view_type,viewCount> views;
+	std::for_each( std::execution::par,
+		views.begin(), views.end(), 
+		[](auto& view){
+			view.reserve(data.size());
+			for ( GeoLoc& item : data)
+			{ view.push_back(&item); }
+		}
+	);
+	stopWatch.checkpoint("copy pointers to views");
 
 	constexpr std::tuple<double, double> fernsehturm{ 52.5208182, 13.4072251 };
 
@@ -241,10 +275,32 @@ int main(void)
 	//latitude/longitude umrechnen zu Abstand+Winkel zu "fernsehturm"
 
 	//Sortieren
-	//Stadt-Bezirk-Stadtteil-Plz-Straﬂe-Hausnummer
-	std::sort(std::execution::par, data.begin(), data.end());
+	static std::array<std::function<bool(const GeoLoc*, const GeoLoc*)>, 5> sortFuncs =
+	{
+		//Stadt-Bezirk-Stadtteil-Plz-Straﬂe-Hausnummer
+		[](const GeoLoc* l, const GeoLoc* r) {return *l < *r; },
+		[](const GeoLoc* l, const GeoLoc* r) {return *r < *l; },
+
+		[](const GeoLoc* l, const GeoLoc* r) {return (*l).Zip()->order < (*r).Zip()->order; },
+		[](const GeoLoc* l, const GeoLoc* r) {return (*l).Latitude() < (*r).Latitude(); },
+		[](const GeoLoc* l, const GeoLoc* r) {return (*l).Longitude() < (*r).Longitude(); },
+	};
+
+	std::vector<size_t> range(views.size());
+	std::iota(range.begin(), range.end(), 0);
+	std::for_each_n(std::execution::par, range.cbegin(), range.size(), 
+		[](size_t N) {
+		std::sort(std::execution::par,
+			views[N].begin(), views[N].end(), 
+			sortFuncs[ (N%sortFuncs.size()) ]
+			);
+		}
+	);
 	stopWatch.checkpoint("sorting datagrid done");
 
-	printSamples(data, 10, 8);
+	for (size_t v = 0; v < views.size(); ++v)
+	{
+		printSamples(views[v], 3, 5);
+	}
 	stopWatch.checkpoint("print done ");
 }

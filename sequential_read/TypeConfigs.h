@@ -5,6 +5,7 @@
 #include "GeoLocation.h"
 
 using data_type = std::vector<GeoLoc>;
+using view_type = std::vector<GeoLoc*>;
 
 enum LoadApproaches : int {
 	read_none,
