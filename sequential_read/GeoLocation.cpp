@@ -149,6 +149,7 @@ std::ostream& operator<<(std::ostream& output, GeoLoc::ISP const& strPtr)
 }
 
 
+
 template<typename FieldType>
 void assignEmpty(FieldType& item)
 {
@@ -200,18 +201,23 @@ void GeoLoc::setLine(std::string_view const& csv) noexcept
 	}
 }
 
-void GeoLoc::print() const noexcept
+
+
+void GeoLoc::print(std::ostream& output) const noexcept
 {
 	size_t index = 0;
-	auto perItem = [&index](const auto& item) {
-		if (++index > 1) { std::cout << "\t"; }
-		std::cout << item;
+	//operator << S
+	//operator << SP
+	//operator << ISP
+	auto perItem = [&index,&output](const auto& item) {
+		if (++index > 1) { output << "\t"; }
+		output << item;
 	};
 
 	std::apply([&perItem](auto&&... items) {
 		(perItem(items), ...);
 		}, raw_data);
-	std::cout << "\n";
+	output << "\n";
 }
 
 bool oldLesserOperator(GeoLoc const& lhs, GeoLoc const& rhs)
