@@ -181,7 +181,7 @@ std::ostream& operator<<(std::ostream& output, GeoLoc const& loc)
 	loc.print(output);
 	return output;
 }
-std::ostream& operator<<(std::ostream& output, GeoLoc* loc)
+std::ostream& operator<<(std::ostream& output, const GeoLoc* loc)
 {
 	loc->print(output);
 	return output;
