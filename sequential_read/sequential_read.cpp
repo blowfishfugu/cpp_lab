@@ -189,18 +189,27 @@ std::ostream& operator<<(std::ostream& output, const GeoLoc* loc)
 
 static auto printSamples = [](auto const& data, const size_t sampleCount = 20, const size_t itemsPerSample = 8)
 {
+	if (data.size() == 0) { return; }
+
 	size_t offset = data.size() / sampleCount; //20 items gleichverteilt über alles ausgeben
 	if (offset == 0) { offset = 1LL; } // 1/20=0 abfangen
+	
+	std::cout << "first:\n"
+		<< data[0] <<"\n";
 
-	for (size_t i = 0; i < data.size(); i += offset)
+	for (size_t i = 0; i < data.size()-itemsPerSample; i += offset)
 	{
 		const size_t uboundSample = i + itemsPerSample;
-		for (size_t region = i; region < uboundSample && region < data.size(); ++region)
+		for (size_t region = i; region < uboundSample; ++region)
 		{
 			std::cout << data[region];
 		}
 		std::cout << "\n";
 	}
+
+	std::cout << "last:\n" 
+		<< data[data.size()-1] <<"\n";
+	
 	std::cout << "---\n";
 };
 
@@ -252,7 +261,7 @@ int main(void)
 	stopWatch.checkpoint("calculate poolorders done");
 	
 	//histOfChars();
-	constexpr const size_t viewCount = 10LL;
+	constexpr const size_t viewCount = 5LL;
 	static std::array<view_type,viewCount> views;
 	std::for_each( std::execution::par,
 		views.begin(), views.end(), 

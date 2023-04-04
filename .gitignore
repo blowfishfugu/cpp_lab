@@ -47,3 +47,4 @@ Debug
 **/tmp/*
 **/bin/*
 **/packages/*
+/sequential_read_core/obj
