@@ -62,7 +62,7 @@ namespace sequential_read_core
 				data[index] = new Item(items);
 			} );
 
-			data.Sort( (l,r) => { return l.STREET.CompareTo(r.STREET); });
+			//data.Sort( (l,r) => { return l.STREET.CompareTo(r.STREET); });
 
 			stopwatch.Stop();
 			Console.WriteLine( $"{stopwatch.ElapsedMilliseconds}ms" );
