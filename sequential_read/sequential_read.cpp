@@ -235,7 +235,8 @@ int main(void)
 	std::cout.setf(std::cout.fixed);
 	std::cout.precision(8);
 
-	/*
+#define TESTS 0
+#if TESTS
 	runLoader( load<read_none>, " read none " );
 	runLoader( load<read_standard>, " read standard warmup.." );
 	runLoader( load<read_standard>, " read standard " );
@@ -244,7 +245,8 @@ int main(void)
 	runLoader( load<read_stringbuffered>, " read with countlines into string as buffer, no getline" );
 	runLoader( load<read_stringbuffered2>, "string_view-iterator, fs, no getline" );
 	return 0;	
-	*/
+#endif
+	
 
 	StopWatch stopWatch(std::cout);
 	stopWatch.checkpoint("init done ");
