@@ -48,3 +48,5 @@ Debug
 **/bin/*
 **/packages/*
 /sequential_read_core/obj
+/sequential_read_core/Properties/PublishProfiles
+/sequential_read_core/sequential_read_core.csproj.user

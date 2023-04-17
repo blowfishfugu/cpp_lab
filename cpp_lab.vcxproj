@@ -13,9 +13,9 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6c58fddd-66ed-45a0-a324-4b463bd93a08}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -31,11 +31,19 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <ItemGroup>
+    <ClInclude Include="Hinnant_date\include\date\chrono_io.h" />
+    <ClInclude Include="Hinnant_date\include\date\date.h" />
+    <ClInclude Include="Hinnant_date\include\date\ios.h" />
+    <ClInclude Include="Hinnant_date\include\date\islamic.h" />
+    <ClInclude Include="Hinnant_date\include\date\iso_week.h" />
+    <ClInclude Include="Hinnant_date\include\date\julian.h" />
+    <ClInclude Include="Hinnant_date\include\date\solar_hijri.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="TTracer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="functional_examples.cpp" />
+    <ClCompile Include="kron.cpp" />
     <ClCompile Include="MoveSemantic.cpp" />
     <ClCompile Include="RValues.cpp" />
     <ClCompile Include="SomeTuples.cpp" />
@@ -67,6 +75,7 @@
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory)Hinnant_date\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -84,6 +93,7 @@
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory)Hinnant_date\include;$(MSBuildThisFileDirectory)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

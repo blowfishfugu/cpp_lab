@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="functional_examples.cpp" />
+    <ClCompile Include="kron.cpp" />
+    <ClCompile Include="MoveSemantic.cpp" />
+    <ClCompile Include="RValues.cpp" />
+    <ClCompile Include="SomeTuples.cpp" />
+    <ClCompile Include="test.cpp" />
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="TTracer.cpp" />
+    <ClCompile Include="UseFilesystem.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="TTracer.h" />
+    <ClInclude Include="Hinnant_date\include\date\chrono_io.h">
+      <Filter>Hinnant_date</Filter>
+    </ClInclude>
+    <ClInclude Include="Hinnant_date\include\date\date.h">
+      <Filter>Hinnant_date</Filter>
+    </ClInclude>
+    <ClInclude Include="Hinnant_date\include\date\ios.h">
+      <Filter>Hinnant_date</Filter>
+    </ClInclude>
+    <ClInclude Include="Hinnant_date\include\date\islamic.h">
+      <Filter>Hinnant_date</Filter>
+    </ClInclude>
+    <ClInclude Include="Hinnant_date\include\date\iso_week.h">
+      <Filter>Hinnant_date</Filter>
+    </ClInclude>
+    <ClInclude Include="Hinnant_date\include\date\julian.h">
+      <Filter>Hinnant_date</Filter>
+    </ClInclude>
+    <ClInclude Include="Hinnant_date\include\date\solar_hijri.h">
+      <Filter>Hinnant_date</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Hinnant_date">
+      <UniqueIdentifier>{c8a7db64-2378-48cb-927d-a83240c4ed90}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
