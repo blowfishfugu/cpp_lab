@@ -228,6 +228,55 @@ static void histOfChars()
 	fp && fclose(fp);
 }
 
+void sortAndPrintOnViewType( data_type& data, StopWatch<std::ostream>& stopWatch)
+{
+	stopWatch.checkpoint("start copy pointers to views");
+	constexpr const size_t viewCount = 5LL;
+	static std::array<view_type, viewCount> views;
+	std::for_each(std::execution::par,
+		views.begin(), views.end(),
+		[&data](auto& view) {
+			view.reserve(data.size());
+			for ( GeoLoc& item : data )
+			{
+				view.push_back(&item);
+			}
+		}
+	);
+	stopWatch.checkpoint("copy pointers to views done");
+
+	//Sortieren
+	static std::array<std::function<bool(const GeoLoc*, const GeoLoc*)>, 5> sortFuncs =
+	{
+		//Stadt-Bezirk-Stadtteil-Plz-Straﬂe-Hausnummer
+		[](const GeoLoc* l, const GeoLoc* r) {return *l < *r; },
+		[](const GeoLoc* l, const GeoLoc* r) {return *r < *l; },
+
+		[](const GeoLoc* l, const GeoLoc* r) {return (*l).Zip()->order < (*r).Zip()->order; },
+		[](const GeoLoc* l, const GeoLoc* r) {return (*l).Latitude() < (*r).Latitude(); },
+		[](const GeoLoc* l, const GeoLoc* r) {return (*l).Longitude() < (*r).Longitude(); },
+	};
+
+	stopWatch.checkpoint("start sorting datagrid");
+	std::vector<size_t> range(views.size());
+	std::iota(range.begin(), range.end(), 0);
+	std::for_each_n(std::execution::par, range.cbegin(), range.size(),
+		[](size_t N) {
+			std::sort(std::execution::par,
+				views[N].begin(), views[N].end(),
+				sortFuncs[(N%sortFuncs.size())]
+			);
+		}
+	);
+	stopWatch.checkpoint("sorting datagrid done");
+
+	for (size_t v = 0; v < views.size(); ++v)
+	{
+		printSamples(views[v], 3, 5);
+	}
+	stopWatch.checkpoint("print done ");
+}
+
 int main(void)
 {
 	//std::ios_base::sync_with_stdio(false); //optimierung.
@@ -251,7 +300,7 @@ int main(void)
 	StopWatch stopWatch(std::cout);
 	stopWatch.checkpoint("init done ");
 
-	static data_type data;
+	data_type data;
 	__int64 linecount=load<read_stringbuffered2>(data);
 	std::cout << linecount << " items\n";
 	stopWatch.checkpoint("load done ");
@@ -261,52 +310,18 @@ int main(void)
 
 	organizeIndex();
 	stopWatch.checkpoint("calculate poolorders done");
-	
 	//histOfChars();
-	constexpr const size_t viewCount = 5LL;
-	static std::array<view_type,viewCount> views;
-	std::for_each( std::execution::par,
-		views.begin(), views.end(), 
-		[](auto& view){
-			view.reserve(data.size());
-			for ( GeoLoc& item : data)
-			{ view.push_back(&item); }
-		}
-	);
-	stopWatch.checkpoint("copy pointers to views");
-
+	
+	//latitude/longitude umrechnen zu Abstand+Winkel zu "fernsehturm"
 	constexpr std::tuple<double, double> fernsehturm{ 52.5208182, 13.4072251 };
 
+	//sortAndPrintOnViewType(data, stopWatch);
 
-	//latitude/longitude umrechnen zu Abstand+Winkel zu "fernsehturm"
-
-	//Sortieren
-	static std::array<std::function<bool(const GeoLoc*, const GeoLoc*)>, 5> sortFuncs =
-	{
-		//Stadt-Bezirk-Stadtteil-Plz-Straﬂe-Hausnummer
-		[](const GeoLoc* l, const GeoLoc* r) {return *l < *r; },
-		[](const GeoLoc* l, const GeoLoc* r) {return *r < *l; },
-
-		[](const GeoLoc* l, const GeoLoc* r) {return (*l).Zip()->order < (*r).Zip()->order; },
-		[](const GeoLoc* l, const GeoLoc* r) {return (*l).Latitude() < (*r).Latitude(); },
-		[](const GeoLoc* l, const GeoLoc* r) {return (*l).Longitude() < (*r).Longitude(); },
-	};
-
-	std::vector<size_t> range(views.size());
-	std::iota(range.begin(), range.end(), 0);
-	std::for_each_n(std::execution::par, range.cbegin(), range.size(), 
-		[](size_t N) {
-		std::sort(std::execution::par,
-			views[N].begin(), views[N].end(), 
-			sortFuncs[ (N%sortFuncs.size()) ]
-			);
-		}
+	stopWatch.checkpoint("start sorting datagrid");
+	std::sort(std::execution::par, data.begin(), data.end(), 
+		[](const GeoLoc& l, const GeoLoc& r) {return l < r; }
 	);
 	stopWatch.checkpoint("sorting datagrid done");
 
-	for (size_t v = 0; v < views.size(); ++v)
-	{
-		printSamples(views[v], 3, 5);
-	}
-	stopWatch.checkpoint("print done ");
+	printSamples(data, 3, 5);
 }

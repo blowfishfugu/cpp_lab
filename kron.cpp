@@ -16,9 +16,9 @@
 TEST(kron, ymd)
 {
 	namespace chrono = std::chrono;
-	namespace date = date; // std::chrono;
+	namespace date = std::chrono; // std::chrono;
 	using namespace std::chrono_literals;
-	using namespace date::literals;
+	//using namespace date::literals;
 	date::year_month_day ymd = { date::year{2022},date::month{1},date::day{1} };
 	std::cout << ymd << "\n";
 	date::year_month_day ymd2 = { date::year{2022}, date::January, date::day{1} };
@@ -34,12 +34,12 @@ TEST(kron, ymd)
 TEST(kron, date_diffs)
 {
 	namespace chrono = std::chrono;
-	namespace date = date; // std::chrono;
-	using namespace std::chrono_literals;
-	using namespace date::literals;
+	namespace date = std::chrono; // std::chrono;
 	
-	auto ymd = 2022_y / 1/ 1;
-	auto ymd_later = 2022_y / 12 / 31;
+	using namespace std::chrono_literals;
+	
+	auto ymd = 2022y / 1/ 1;
+	auto ymd_later = 2022y / 12 / 31;
 	
 	ASSERT_TRUE(ymd.ok());
 	ASSERT_TRUE(ymd_later.ok());
@@ -50,29 +50,29 @@ TEST(kron, date_diffs)
 
 constexpr
 bool
-is_weekend(date::year_month_day ymd)
+is_weekend(std::chrono::year_month_day ymd)
 {
 	using namespace std::chrono;
-	const date::sys_days days = ymd;
-	const date::weekday wd{ days };
-	return wd == date::Saturday || wd == date::Sunday;
+	const std::chrono::sys_days days = ymd;
+	const std::chrono::weekday wd{ days };
+	return wd == std::chrono::Saturday || wd == std::chrono::Sunday;
 }
 
 TEST(kron, weekdays)
 {
 	namespace chrono = std::chrono;
-	namespace date = date; // std::chrono;
+	namespace date = std::chrono; // std::chrono;
 	using namespace std::chrono_literals;
-	using namespace date::literals;
+	
 	date::month m = date::January;
 	date::year_month_day today=date::floor<date::days>(std::chrono::system_clock::now());
 	std::cout << is_weekend(today) << "\n";
 
 	do {
-		date::year_month_day_last ym_last{ 2022_y / m / date::last };
+		date::year_month_day_last ym_last{ 2022y / m / date::last };
 		//std::cout <<  ym_last.month() << " " << static_cast<unsigned>(ym_last.day()) << "\n";
 		
-		const date::year_month_day from{ 2022_y / m / 1 };
+		const date::year_month_day from{ 2022y / m / 1 };
 		const date::year_month_day to{ ym_last };
 		std::cout << from << " " << to <<"\n";
 		int daycount = 0;
@@ -90,7 +90,7 @@ TEST(kron, weekdays)
 }
 
 //impl aus ym_last.day()
-constexpr auto last_day_of_the_month=[](const date::year_month_day& ymd)->unsigned
+constexpr auto last_day_of_the_month=[](const std::chrono::year_month_day& ymd)->unsigned
 {
 	unsigned m = static_cast<unsigned>(ymd.month());
 	constexpr static std::array<unsigned, 12> normals{31,28,31,30,31,30,31,31,30,31,30,31};
