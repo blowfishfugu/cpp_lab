@@ -28,6 +28,15 @@
 
 #include <numeric>
 #include <charconv>
+#include <string>
+#include <string_view>
+#ifdef UNICODE
+using String = std::wstring;
+using StringView = std::wstring_view;
+#else
+using String = std::string;
+using StringView = std::string_view;
+#endif
 
 // Takes handle, handle type, and stmt
 #define TRYODBC(h, ht, x) { RETCODE rc = x;\
@@ -37,18 +46,18 @@
 								} \
 								if (rc == SQL_ERROR) \
 								{ \
-									fwprintf(stderr, L"Error in " L#x L"\n"); \
+									fwprintf(stderr, _T("Error in ") _T(#x) _T("\n")); \
 									goto Exit; \
 								} \
 							}
 
 // Structure to store information about a column.
 struct BINDING {
-	SQLSMALLINT cDisplaySize; // size to display
-	WCHAR* wszBuffer; //display buffer
-	SQLLEN indPtr; //size or null
-	BOOL fChar; //character col?
-	struct BINDING* sNext; //linked list
+	SQLSMALLINT cDisplaySize{}; // size to display
+	TCHAR* wszBuffer=nullptr; //display buffer
+	SQLLEN indPtr{}; //size or null
+	BOOL fChar{}; //character col?
+	BINDING* sNext=nullptr; //linked list
 };
 
 void HandleDiagnosticRecord(SQLHANDLE hHandle, SQLSMALLINT hType, RETCODE RetCode);
@@ -57,23 +66,23 @@ void AllocateBindings(HSTMT hStmt, SQLSMALLINT cCols, BINDING** ppBinding, SQLSM
 void DisplayTitles(HSTMT hStmt, DWORD cDisplaySize, BINDING* pBinding);
 void SetConsole(DWORD cDisplaySize, BOOL fInvert);
 
-#define DISPLAY_MAX 50 // Arbitrary limit on column width to display
-#define DISPLAY_FORMAT_EXTRA 3 // Per column extra display bytes (| <data> )
-#define DISPLAY_FORMAT L"%c %*.*s "
-#define DISPLAY_FORMAT_C L"%c %-*.*s "
-#define NULL_SIZE 6 // <NULL>
-#define SQL_QUERY_SIZE 1000 // Max. Num characters for SQL Query passed in.
-#define PIPE L'|'
+constexpr SQLLEN DISPLAY_MAX = 50; // Arbitrary limit on column width to display;
+constexpr SQLSMALLINT DISPLAY_FORMAT_EXTRA = 3; // Per column extra display bytes (| <data> );
+constexpr const TCHAR* DISPLAY_FORMAT = _T("%c %*.*s ");
+constexpr const TCHAR* DISPLAY_FORMAT_C = _T("%c %-*.*s ");
+constexpr const size_t NULL_SIZE = 6; //<NULL>
+constexpr const size_t SQL_QUERY_SIZE = 1000; // Max. Num characters for SQL Query passed in.
+constexpr const TCHAR PIPE = _T('|');
 
-SHORT gHeight = 80; // Users screen height
+SHORT gHeight = 80; // Users screen height (adapts)
 
 int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 {
 	SQLHENV hEnv = NULL;
 	SQLHDBC hDbc = NULL;
 	SQLHSTMT hStmt = NULL;
-	const WCHAR* pwszConnStr = L"Driver=SQL Server;Server=menace\\SQL2012;Database=destatis;Integrated Security=true";
-	WCHAR wszInput[SQL_QUERY_SIZE]{};
+	const TCHAR* pwszConnStr = L"Driver=SQL Server;Server=menace\\SQL2012;Database=destatis;Integrated Security=true";
+	TCHAR wszInput[SQL_QUERY_SIZE]{};
 
 	if (SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &hEnv) == SQL_ERROR)
 	{
@@ -95,7 +104,7 @@ int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 	// on the input, otherwise let the driver manager prompt for input.
 	TRYODBC(hDbc, SQL_HANDLE_DBC,
 		SQLDriverConnect(hDbc, GetDesktopWindow(),
-			const_cast<WCHAR*>(pwszConnStr), //const_cast, weil sqldriverconnect es so möchte
+			const_cast<TCHAR*>(pwszConnStr), //const_cast, weil sqldriverconnect es so möchte
 			SQL_NTS, NULL, 0, NULL, SQL_DRIVER_COMPLETE));
 
 	fwprintf(stderr, L"Connected!\n");
@@ -258,7 +267,7 @@ void DisplayResults(HSTMT hStmt, SQLSMALLINT cCols)
 						PIPE,
 						pThisBinding->cDisplaySize,
 						pThisBinding->cDisplaySize,
-						L"<NULL>");
+						_T("<NULL>"));
 				}
 			}
 			wprintf(L" %c\n", PIPE);
@@ -342,7 +351,7 @@ void AllocateBindings(HSTMT hStmt, SQLSMALLINT cCols, BINDING** ppBinding, SQLSM
 
 		// Allocate a buffer big enough to hold the text representation
 		// of the data. Add one character for the null terminator
-		pThisBinding->wszBuffer = (WCHAR*)malloc((cchDisplay + 1) * sizeof(WCHAR));
+		pThisBinding->wszBuffer = (TCHAR*)malloc((cchDisplay + 1) * sizeof(TCHAR));
 		if (!(pThisBinding->wszBuffer))
 		{
 			fwprintf(stderr, L"Out of memory!\n");
@@ -358,7 +367,7 @@ void AllocateBindings(HSTMT hStmt, SQLSMALLINT cCols, BINDING** ppBinding, SQLSM
 			SQL_HANDLE_STMT,
 			SQLBindCol(hStmt, iCol, SQL_C_TCHAR,
 				(SQLPOINTER)pThisBinding->wszBuffer,
-				(cchDisplay + 1) * sizeof(WCHAR),
+				(cchDisplay + 1) * sizeof(TCHAR),
 				&pThisBinding->indPtr));
 
 		// Now set the display size that we will use to display
@@ -388,7 +397,7 @@ Exit:
 //pBinding list of binding information
 void DisplayTitles(HSTMT hStmt, DWORD cDisplaySize, BINDING* pBinding)
 {
-	WCHAR wszTitle[DISPLAY_MAX];
+	TCHAR wszTitle[DISPLAY_MAX];
 	SQLSMALLINT iCol = 1;
 	SetConsole(cDisplaySize + 2, TRUE);
 
@@ -451,8 +460,8 @@ void HandleDiagnosticRecord(SQLHANDLE hHandle, SQLSMALLINT hType, RETCODE RetCod
 {
 	SQLSMALLINT iRec = 0;
 	SQLINTEGER iError;
-	WCHAR wszMessage[1000];
-	WCHAR wszState[SQL_SQLSTATE_SIZE + 1];
+	TCHAR wszMessage[1000];
+	TCHAR wszState[SQL_SQLSTATE_SIZE + 1];
 
 	if (RetCode == SQL_INVALID_HANDLE)
 	{
@@ -461,7 +470,7 @@ void HandleDiagnosticRecord(SQLHANDLE hHandle, SQLSMALLINT hType, RETCODE RetCod
 	}
 
 	while (SQLGetDiagRec(hType, hHandle, ++iRec, wszState, &iError, wszMessage,
-		(SQLSMALLINT)(sizeof(wszMessage) / sizeof(WCHAR)), (SQLSMALLINT*)NULL)
+		(SQLSMALLINT)(sizeof(wszMessage) / sizeof(TCHAR)), (SQLSMALLINT*)NULL)
 		== SQL_SUCCESS
 		)
 	{
