@@ -83,6 +83,9 @@
   <ItemGroup>
     <ClCompile Include="db_read.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="TMyCredentials.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -1,6 +1,5 @@
 //Sample: Entnahme von https://learn.microsoft.com/en-us/sql/connect/odbc/cpp-code-example-app-connect-access-sql-db?view=sql-server-ver16#b-odbcsqlcpp-code
 //ODBCSQL: a sample program that implements an ODBC command line interpreter.
-//
 //USAGE: ODBCSQL DSN=<dsn name> or
 //ODBCSQL FILEDSN=<file dsn> or
 //ODBCSQL DRIVER={driver name}
@@ -15,6 +14,7 @@
 //DisplayTitles Print column titles
 //SetConsole Set console display mode
 //HandleError Show ODBC error messages
+#include "TMyCredentials.h"
 
 #define NOMINMAX
 #include <windows.h>
@@ -30,6 +30,7 @@
 #include <charconv>
 #include <string>
 #include <string_view>
+
 #ifdef UNICODE
 using String = std::wstring;
 using StringView = std::wstring_view;
@@ -37,7 +38,7 @@ using StringView = std::wstring_view;
 using String = std::string;
 using StringView = std::string_view;
 #endif
-
+using LoginData = TMyCredentials;
 // Takes handle, handle type, and stmt
 #define TRYODBC(h, ht, x) { RETCODE rc = x;\
 								if (rc != SQL_SUCCESS) \
@@ -81,7 +82,7 @@ int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 	SQLHENV hEnv = NULL;
 	SQLHDBC hDbc = NULL;
 	SQLHSTMT hStmt = NULL;
-	const TCHAR* pwszConnStr = L"Driver=SQL Server;Server=menace\\SQL2012;Database=destatis;Integrated Security=true";
+	const TCHAR* pwszConnStr = _T("Driver=SQL Server;Server=menace\\SQL2012;Database=destatis;Integrated Security=true");
 	TCHAR wszInput[SQL_QUERY_SIZE]{};
 
 	if (SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &hEnv) == SQL_ERROR)

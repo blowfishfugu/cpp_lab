@@ -17,11 +17,19 @@ struct IndexedString {
 
 inline bool operator==(IndexedString const& l, IndexedString const& r){
 	return l.str == r.str;
+	//return (l<=>r) ==0
 }
+//implicit da, wenn == definiert ist
+//inline bool operator!=(IndexedString const& l, IndexedString const& r){
+//	return !(l == r);
+//}
 
-inline bool operator!=(IndexedString const& l, IndexedString const& r){
-	return !(l == r);
+#ifdef __cpp_impl_three_way_comparison
+inline std::strong_ordering operator<=>(IndexedString const& l, IndexedString const& r)
+{
+	return l.str <=> r.str;
 }
+#endif
 
 template<>
 struct std::hash<IndexedString>{	
