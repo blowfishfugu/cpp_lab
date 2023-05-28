@@ -93,7 +93,9 @@ template<SQLSMALLINT handleType=SQL_HANDLE_ENV>
 struct OdbcHandle
 {
 	SQLHANDLE handle = SQL_NULL_HANDLE;
+	SQLSMALLINT type;
 	OdbcHandle(SQLHANDLE parentHandle=SQL_NULL_HANDLE)
+		: type{handleType}
 	{
 		if constexpr (handleType != SQL_HANDLE_ENV)
 		{
@@ -138,6 +140,54 @@ struct OdbcHandle
 
 		TRYODBC(handle, handleType, rc);
 	}
+
+	void TryExec(TCHAR* wszInput)
+	{
+		static_assert(handleType == SQL_HANDLE_STMT, "TryExec only callable on STMT-Handles");
+		SQLRETURN RetCode = SQLExecDirect(handle, wszInput, SQL_NTS);
+
+		switch (RetCode)
+		{
+		case SQL_SUCCESS_WITH_INFO:
+		{
+			HandleDiagnosticRecord(handle, handleType, RetCode);
+			[[fallthrough]];
+		}
+		case SQL_SUCCESS:
+		{
+			// If this is a row-returning query, display
+			// results
+			SQLSMALLINT sNumResults;
+			SQLRETURN rc = SQLNumResultCols(handle, &sNumResults);
+			TRYODBC(handle, handleType, rc);
+
+			if (sNumResults > 0)
+			{
+				DisplayResults(handle, sNumResults);
+			}
+			else
+			{
+				SQLLEN cRowCount;
+				SQLRETURN rc = SQLRowCount(handle, &cRowCount);
+				TRYODBC(handle, handleType, rc);
+				if (cRowCount >= 0)
+				{
+					wprintf(L"%Id %s affected\n", cRowCount, cRowCount == 1 ? L"row" : L"rows");
+				}
+			}
+			break;
+		}
+		case SQL_ERROR:
+		{
+			HandleDiagnosticRecord(handle, handleType, RetCode);
+			break;
+		}
+		default:
+			fwprintf(stderr, L"Unexpected return code %hd!\n", RetCode);
+
+		}
+		TRYODBC(handle, handleType, SQLFreeStmt(handle, SQL_CLOSE));
+	}
 };
 
 int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
@@ -169,47 +219,7 @@ int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 			wprintf(L"SQL COMMAND>");
 			continue;
 		}
-		SQLRETURN RetCode = SQLExecDirect(hStmt, wszInput, SQL_NTS);
-
-		switch (RetCode)
-		{
-		case SQL_SUCCESS_WITH_INFO:
-		{
-			HandleDiagnosticRecord(hStmt, SQL_HANDLE_STMT, RetCode);
-			[[fallthrough]];
-		}
-		case SQL_SUCCESS:
-		{
-			// If this is a row-returning query, display
-			// results
-			SQLSMALLINT sNumResults;
-			TRYODBC(hStmt, SQL_HANDLE_STMT, SQLNumResultCols(hStmt, &sNumResults));
-
-			if (sNumResults > 0)
-			{
-				DisplayResults(hStmt, sNumResults);
-			}
-			else
-			{
-				SQLLEN cRowCount;
-				TRYODBC(hStmt, SQL_HANDLE_STMT, SQLRowCount(hStmt, &cRowCount));
-				if (cRowCount >= 0)
-				{
-					wprintf(L"%Id %s affected\n", cRowCount, cRowCount == 1 ? L"row" : L"rows");
-				}
-			}
-			break;
-		}
-		case SQL_ERROR:
-		{
-			HandleDiagnosticRecord(hStmt, SQL_HANDLE_STMT, RetCode);
-			break;
-		}
-		default:
-			fwprintf(stderr, L"Unexpected return code %hd!\n", RetCode);
-
-		}
-		TRYODBC(hStmt, SQL_HANDLE_STMT, SQLFreeStmt(hStmt, SQL_CLOSE));
+		hStmt.TryExec(wszInput);
 		wprintf(L"SQL COMMAND>");
 	}
 
