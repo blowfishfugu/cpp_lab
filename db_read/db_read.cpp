@@ -92,20 +92,26 @@ SHORT gHeight = 80; // Users screen height (adapts)
 template<SQLSMALLINT handleType=SQL_HANDLE_ENV>
 struct OdbcHandle
 {
-	SQLSMALLINT type;
-	SQLHANDLE handle = NULL;
-	SQLHANDLE parent;
+	SQLHANDLE handle = SQL_NULL_HANDLE;
 	OdbcHandle(SQLHANDLE parentHandle=SQL_NULL_HANDLE)
-		: parent(parentHandle), type(handleType)
 	{
-		if constexpr (handleType != SQL_HANDLE_ENV) {
-			if (parent == NULL)
+		if constexpr (handleType != SQL_HANDLE_ENV)
+		{
+			if (parentHandle == SQL_NULL_HANDLE)
 			{
 				throw odbc_exception("Handletype needs a parentHandle to allocate");
 			}
 		}
-		SQLRETURN rc = SQLAllocHandle(type, parent, &handle);
-		TRYODBC(parent, type, rc);
+		
+		SQLRETURN rc = SQLAllocHandle(handleType, parentHandle, &handle);
+		TRYODBC(parentHandle, handleType, rc);
+		
+		if constexpr ( handleType==SQL_HANDLE_ENV)
+		{ 
+			// Register this as an application that expects 3.x behavior,
+			rc = SQLSetEnvAttr(handle, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0);
+			TRYODBC(handle, handleType, rc);
+		}
 	}
 	
 	~OdbcHandle()
@@ -116,7 +122,7 @@ struct OdbcHandle
 			{
 				SQLDisconnect(handle);
 			}
-			SQLFreeHandle(type, handle);
+			SQLFreeHandle(handleType, handle);
 		}
 	}
 
@@ -129,8 +135,6 @@ int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 	TCHAR wszInput[SQL_QUERY_SIZE]{};
 
 	OdbcHandle<SQL_HANDLE_ENV> env;
-	// Register this as an application that expects 3.x behavior,
-	TRYODBC(env, SQL_HANDLE_ENV, SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0));
 
 	OdbcHandle<SQL_HANDLE_DBC> hDbc(env);
 	
