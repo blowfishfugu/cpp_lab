@@ -127,46 +127,49 @@ struct OdbcHandle
 	}
 
 	operator SQLHANDLE() { return handle; }
+
+	void TryConnect(const TCHAR* pwszConnStr)
+	{
+		static_assert(handleType == SQL_HANDLE_DBC, "TryConnect only callable on hdbc-Handles");
+		SQLRETURN rc = SQLDriverConnect(
+			handle, GetDesktopWindow(),
+			const_cast<TCHAR*>(pwszConnStr), //const_cast, weil sqldriverconnect es so möchte
+			SQL_NTS, NULL, 0, NULL, SQL_DRIVER_COMPLETE);
+
+		TRYODBC(handle, handleType, rc);
+	}
 };
 
 int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 {
 	const TCHAR* pwszConnStr = _T("Driver=SQL Server;Server=menace\\SQL2012;Database=destatis;Integrated Security=true");
-	TCHAR wszInput[SQL_QUERY_SIZE]{};
-
-	OdbcHandle<SQL_HANDLE_ENV> env;
-
-	OdbcHandle<SQL_HANDLE_DBC> hDbc(env);
-	
 	if (argc > 1)
 	{
 		pwszConnStr = *++argv;
 	}
 
+	OdbcHandle<SQL_HANDLE_ENV> env;
+	OdbcHandle<SQL_HANDLE_DBC> hDbc(env);
+	
 	// Connect to the driver. Use the connection string if supplied
 	// on the input, otherwise let the driver manager prompt for input.
-	TRYODBC(hDbc, SQL_HANDLE_DBC,
-		SQLDriverConnect(hDbc, GetDesktopWindow(),
-			const_cast<TCHAR*>(pwszConnStr), //const_cast, weil sqldriverconnect es so möchte
-			SQL_NTS, NULL, 0, NULL, SQL_DRIVER_COMPLETE));
+	hDbc.TryConnect(pwszConnStr);
 	fwprintf(stderr, L"Connected!\n");
 
 	OdbcHandle<SQL_HANDLE_STMT> hStmt(hDbc);
 	wprintf(L"Enter SQL commands, type (control)Z to exit\nSQL COMMAND>");
 
+	TCHAR wszInput[SQL_QUERY_SIZE]{};
 	// Loop to get input and execute queries
 	while (_fgetts(wszInput, SQL_QUERY_SIZE - 1, stdin))
 	{
-		RETCODE RetCode;
-		SQLSMALLINT sNumResults;
-
 		// Execute the query
 		if (!(*wszInput))
 		{
 			wprintf(L"SQL COMMAND>");
 			continue;
 		}
-		RetCode = SQLExecDirect(hStmt, wszInput, SQL_NTS);
+		SQLRETURN RetCode = SQLExecDirect(hStmt, wszInput, SQL_NTS);
 
 		switch (RetCode)
 		{
@@ -179,6 +182,7 @@ int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 		{
 			// If this is a row-returning query, display
 			// results
+			SQLSMALLINT sNumResults;
 			TRYODBC(hStmt, SQL_HANDLE_STMT, SQLNumResultCols(hStmt, &sNumResults));
 
 			if (sNumResults > 0)
@@ -188,9 +192,7 @@ int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 			else
 			{
 				SQLLEN cRowCount;
-
 				TRYODBC(hStmt, SQL_HANDLE_STMT, SQLRowCount(hStmt, &cRowCount));
-
 				if (cRowCount >= 0)
 				{
 					wprintf(L"%Id %s affected\n", cRowCount, cRowCount == 1 ? L"row" : L"rows");
@@ -198,13 +200,11 @@ int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 			}
 			break;
 		}
-
 		case SQL_ERROR:
 		{
 			HandleDiagnosticRecord(hStmt, SQL_HANDLE_STMT, RetCode);
 			break;
 		}
-
 		default:
 			fwprintf(stderr, L"Unexpected return code %hd!\n", RetCode);
 
@@ -478,10 +478,6 @@ void SetConsole(DWORD dwDisplaySize, BOOL fInvert)
 //RetCode Return code of failing command
 void HandleDiagnosticRecord(SQLHANDLE hHandle, SQLSMALLINT hType, RETCODE RetCode)
 {
-	SQLSMALLINT iRec = 0;
-	SQLINTEGER iError;
-	TCHAR wszMessage[1000];
-	TCHAR wszState[SQL_SQLSTATE_SIZE + 1];
 
 	if (RetCode == SQL_INVALID_HANDLE)
 	{
@@ -492,6 +488,11 @@ void HandleDiagnosticRecord(SQLHANDLE hHandle, SQLSMALLINT hType, RETCODE RetCod
 	{
 		return;
 	}
+
+	SQLSMALLINT iRec = 0;
+	SQLINTEGER iError;
+	TCHAR wszMessage[1000];
+	TCHAR wszState[SQL_SQLSTATE_SIZE + 1];
 	while (SQLGetDiagRec(hType, hHandle, ++iRec, wszState, &iError, wszMessage,
 		(SQLSMALLINT)(sizeof(wszMessage) / sizeof(TCHAR)), (SQLSMALLINT*)NULL)
 		== SQL_SUCCESS
