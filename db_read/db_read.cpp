@@ -38,19 +38,17 @@ using StringView = std::wstring_view;
 using String = std::string;
 using StringView = std::string_view;
 #endif
+
 using LoginData = TMyCredentials;
-// Takes handle, handle type, and stmt
-#define TRYODBC(h, ht, x) { RETCODE rc = x;\
-								if (rc != SQL_SUCCESS) \
-								{ \
-									HandleDiagnosticRecord (h, ht, rc); \
-								} \
-								if (rc == SQL_ERROR) \
-								{ \
-									fwprintf(stderr, _T("Error in ") _T(#x) _T("\n")); \
-									goto Exit; \
-								} \
-							}
+
+struct odbc_exception : public std::exception
+{
+	std::string _msg;
+	odbc_exception(const char* const msg) : _msg(msg), std::exception(msg)
+	{}
+	odbc_exception( const std::string& msg) : _msg(msg), std::exception(_msg.c_str())
+	{}
+};
 
 // Structure to store information about a column.
 struct BINDING {
@@ -67,6 +65,20 @@ void AllocateBindings(HSTMT hStmt, SQLSMALLINT cCols, BINDING** ppBinding, SQLSM
 void DisplayTitles(HSTMT hStmt, DWORD cDisplaySize, BINDING* pBinding);
 void SetConsole(DWORD cDisplaySize, BOOL fInvert);
 
+// Takes handle, handle type, and stmt
+auto TRYODBC = [](SQLHANDLE context, SQLSMALLINT handletype, SQLRETURN rc) {
+	if (rc != SQL_SUCCESS)
+	{
+		HandleDiagnosticRecord(context, handletype, rc);
+	}
+	if (rc == SQL_ERROR)
+	{
+		throw odbc_exception(std::format("Error in"));
+	}
+};
+
+
+
 constexpr SQLLEN DISPLAY_MAX = 50; // Arbitrary limit on column width to display;
 constexpr SQLSMALLINT DISPLAY_FORMAT_EXTRA = 3; // Per column extra display bytes (| <data> );
 constexpr const TCHAR* DISPLAY_FORMAT = _T("%c %*.*s ");
@@ -77,25 +89,51 @@ constexpr const TCHAR PIPE = _T('|');
 
 SHORT gHeight = 80; // Users screen height (adapts)
 
+template<SQLSMALLINT handleType=SQL_HANDLE_ENV>
+struct OdbcHandle
+{
+	SQLSMALLINT type;
+	SQLHANDLE handle = NULL;
+	SQLHANDLE parent;
+	OdbcHandle(SQLHANDLE parentHandle=SQL_NULL_HANDLE)
+		: parent(parentHandle), type(handleType)
+	{
+		if constexpr (handleType != SQL_HANDLE_ENV) {
+			if (parent == NULL)
+			{
+				throw odbc_exception("Handletype needs a parentHandle to allocate");
+			}
+		}
+		SQLRETURN rc = SQLAllocHandle(type, parent, &handle);
+		TRYODBC(parent, type, rc);
+	}
+	
+	~OdbcHandle()
+	{
+		if (handle)
+		{
+			if constexpr (handleType == SQL_HANDLE_DBC)
+			{
+				SQLDisconnect(handle);
+			}
+			SQLFreeHandle(type, handle);
+		}
+	}
+
+	operator SQLHANDLE() { return handle; }
+};
+
 int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 {
-	SQLHENV hEnv = NULL;
-	SQLHDBC hDbc = NULL;
-	SQLHSTMT hStmt = NULL;
 	const TCHAR* pwszConnStr = _T("Driver=SQL Server;Server=menace\\SQL2012;Database=destatis;Integrated Security=true");
 	TCHAR wszInput[SQL_QUERY_SIZE]{};
 
-	if (SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &hEnv) == SQL_ERROR)
-	{
-		fwprintf(stderr, L"Unable to allocate an environment handle\n");
-		exit(-1);
-	}
-
+	OdbcHandle<SQL_HANDLE_ENV> env;
 	// Register this as an application that expects 3.x behavior,
-	TRYODBC(hEnv, SQL_HANDLE_ENV, SQLSetEnvAttr(hEnv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0));
-	// Allocate a connection
-	TRYODBC(hEnv, SQL_HANDLE_ENV, SQLAllocHandle(SQL_HANDLE_DBC, hEnv, &hDbc));
+	TRYODBC(env, SQL_HANDLE_ENV, SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0));
 
+	OdbcHandle<SQL_HANDLE_DBC> hDbc(env);
+	
 	if (argc > 1)
 	{
 		pwszConnStr = *++argv;
@@ -107,10 +145,9 @@ int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 		SQLDriverConnect(hDbc, GetDesktopWindow(),
 			const_cast<TCHAR*>(pwszConnStr), //const_cast, weil sqldriverconnect es so möchte
 			SQL_NTS, NULL, 0, NULL, SQL_DRIVER_COMPLETE));
-
 	fwprintf(stderr, L"Connected!\n");
 
-	TRYODBC(hDbc, SQL_HANDLE_DBC, SQLAllocHandle(SQL_HANDLE_STMT, hDbc, &hStmt));
+	OdbcHandle<SQL_HANDLE_STMT> hStmt(hDbc);
 	wprintf(L"Enter SQL commands, type (control)Z to exit\nSQL COMMAND>");
 
 	// Loop to get input and execute queries
@@ -172,24 +209,7 @@ int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 		wprintf(L"SQL COMMAND>");
 	}
 
-Exit:
 	// Free ODBC handles and exit
-	if (hStmt)
-	{
-		SQLFreeHandle(SQL_HANDLE_STMT, hStmt);
-	}
-
-	if (hDbc)
-	{
-		SQLDisconnect(hDbc);
-		SQLFreeHandle(SQL_HANDLE_DBC, hDbc);
-	}
-
-	if (hEnv)
-	{
-		SQLFreeHandle(SQL_HANDLE_ENV, hEnv);
-	}
-
 	wprintf(L"\nDisconnected.");
 	return 0;
 }
@@ -385,10 +405,6 @@ void AllocateBindings(HSTMT hStmt, SQLSMALLINT cCols, BINDING** ppBinding, SQLSM
 
 		*pDisplay += pThisBinding->cDisplaySize + DISPLAY_FORMAT_EXTRA;
 	}
-	return;
-Exit:
-	std::exit(-1);
-	return;
 }
 
 //DisplayTitles: print the titles of all the columns and set the shell window's width
@@ -411,7 +427,6 @@ void DisplayTitles(HSTMT hStmt, DWORD cDisplaySize, BINDING* pBinding)
 				NULL, NULL));
 		wprintf(DISPLAY_FORMAT_C, PIPE, pBinding->cDisplaySize, pBinding->cDisplaySize, wszTitle);
 	}
-Exit:
 	wprintf(L" %c", PIPE);
 	SetConsole(cDisplaySize + 2, FALSE);
 	wprintf(L"\n");
@@ -469,7 +484,10 @@ void HandleDiagnosticRecord(SQLHANDLE hHandle, SQLSMALLINT hType, RETCODE RetCod
 		fwprintf(stderr, L"Invalid handle!\n");
 		return;
 	}
-
+	if (hHandle==SQL_NULL_HANDLE)
+	{
+		return;
+	}
 	while (SQLGetDiagRec(hType, hHandle, ++iRec, wszState, &iError, wszMessage,
 		(SQLSMALLINT)(sizeof(wszMessage) / sizeof(TCHAR)), (SQLSMALLINT*)NULL)
 		== SQL_SUCCESS
