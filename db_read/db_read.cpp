@@ -30,7 +30,8 @@
 #include <charconv>
 #include <string>
 #include <string_view>
-
+#include <source_location>
+#include <iostream>
 #ifdef UNICODE
 using String = std::wstring;
 using StringView = std::wstring_view;
@@ -43,10 +44,7 @@ using LoginData = TMyCredentials;
 
 struct odbc_exception : public std::exception
 {
-	std::string _msg;
-	odbc_exception(const char* const msg) : _msg(msg), std::exception(msg)
-	{}
-	odbc_exception( const std::string& msg) : _msg(msg), std::exception(_msg.c_str())
+	odbc_exception( std::string msg ) : std::exception(msg.c_str())
 	{}
 };
 
@@ -59,21 +57,21 @@ struct BINDING {
 	BINDING* sNext=nullptr; //linked list
 };
 
-void HandleDiagnosticRecord(SQLHANDLE hHandle, SQLSMALLINT hType, RETCODE RetCode);
+void HandleDiagnosticRecord(SQLHANDLE hHandle, SQLSMALLINT hType, RETCODE RetCode, const std::source_location& loc);
 void DisplayResults(HSTMT hStmt, SQLSMALLINT cCols);
 void AllocateBindings(HSTMT hStmt, SQLSMALLINT cCols, BINDING** ppBinding, SQLSMALLINT* pDisplay);
 void DisplayTitles(HSTMT hStmt, DWORD cDisplaySize, BINDING* pBinding);
 void SetConsole(DWORD cDisplaySize, BOOL fInvert);
 
 // Takes handle, handle type, and stmt
-auto TRYODBC = [](SQLHANDLE context, SQLSMALLINT handletype, SQLRETURN rc) {
+auto TRYODBC = [](SQLHANDLE context, SQLSMALLINT handletype, SQLRETURN rc, std::source_location loc=std::source_location::current()){
 	if (rc != SQL_SUCCESS)
 	{
-		HandleDiagnosticRecord(context, handletype, rc);
+		HandleDiagnosticRecord(context, handletype, rc, loc);
 	}
 	if (rc == SQL_ERROR)
 	{
-		throw odbc_exception(std::format("Error in"));
+		throw odbc_exception(std::format("Error in {} : {}", loc.file_name(), loc.line()));
 	}
 };
 
@@ -133,9 +131,9 @@ struct OdbcHandle
 	void TryConnect(const TCHAR* pwszConnStr)
 	{
 		static_assert(handleType == SQL_HANDLE_DBC, "TryConnect only callable on hdbc-Handles");
-		SQLRETURN rc = SQLDriverConnect(
+		SQLRETURN rc = SQLDriverConnectA(
 			handle, GetDesktopWindow(),
-			const_cast<TCHAR*>(pwszConnStr), //const_cast, weil sqldriverconnect es so möchte
+			(SQLTCHAR*)pwszConnStr, //const_cast, weil sqldriverconnect es so möchte
 			SQL_NTS, NULL, 0, NULL, SQL_DRIVER_COMPLETE);
 
 		TRYODBC(handle, handleType, rc);
@@ -144,13 +142,13 @@ struct OdbcHandle
 	void TryExec(TCHAR* wszInput)
 	{
 		static_assert(handleType == SQL_HANDLE_STMT, "TryExec only callable on STMT-Handles");
-		SQLRETURN RetCode = SQLExecDirect(handle, wszInput, SQL_NTS);
+		SQLRETURN RetCode = SQLExecDirect(handle, (SQLTCHAR*)wszInput, SQL_NTS);
 
 		switch (RetCode)
 		{
 		case SQL_SUCCESS_WITH_INFO:
 		{
-			HandleDiagnosticRecord(handle, handleType, RetCode);
+			HandleDiagnosticRecord(handle, handleType, RetCode, std::source_location::current());
 			[[fallthrough]];
 		}
 		case SQL_SUCCESS:
@@ -172,18 +170,18 @@ struct OdbcHandle
 				TRYODBC(handle, handleType, rc);
 				if (cRowCount >= 0)
 				{
-					wprintf(L"%Id %s affected\n", cRowCount, cRowCount == 1 ? L"row" : L"rows");
+					_tprintf(_T("% Id % s affected\n"), cRowCount, cRowCount == 1 ? _T("row") : _T("rows") );
 				}
 			}
 			break;
 		}
 		case SQL_ERROR:
 		{
-			HandleDiagnosticRecord(handle, handleType, RetCode);
+			HandleDiagnosticRecord(handle, handleType, RetCode, std::source_location::current());
 			break;
 		}
 		default:
-			fwprintf(stderr, L"Unexpected return code %hd!\n", RetCode);
+			_ftprintf(stderr, _T("Unexpected return code % hd!\n"), RetCode);
 
 		}
 		TRYODBC(handle, handleType, SQLFreeStmt(handle, SQL_CLOSE));
@@ -192,39 +190,49 @@ struct OdbcHandle
 
 int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 {
-	const TCHAR* pwszConnStr = _T("Driver=SQL Server;Server=menace\\SQL2012;Database=destatis;Integrated Security=true");
+	const TCHAR* pwszConnStr = _T("DRIVER={SQL Server};SERVER=MENACE\\SQL2012;DATABASE=destatis;Trusted_Connection=Yes");
 	if (argc > 1)
 	{
 		pwszConnStr = *++argv;
 	}
+	try {
+		OdbcHandle<SQL_HANDLE_ENV> env;
+		OdbcHandle<SQL_HANDLE_DBC> hDbc(env);
 
-	OdbcHandle<SQL_HANDLE_ENV> env;
-	OdbcHandle<SQL_HANDLE_DBC> hDbc(env);
-	
-	// Connect to the driver. Use the connection string if supplied
-	// on the input, otherwise let the driver manager prompt for input.
-	hDbc.TryConnect(pwszConnStr);
-	fwprintf(stderr, L"Connected!\n");
+		// Connect to the driver. Use the connection string if supplied
+		// on the input, otherwise let the driver manager prompt for input.
+		hDbc.TryConnect(pwszConnStr);
+		_ftprintf(stderr, _T("Connected!\n"));
 
-	OdbcHandle<SQL_HANDLE_STMT> hStmt(hDbc);
-	wprintf(L"Enter SQL commands, type (control)Z to exit\nSQL COMMAND>");
+		OdbcHandle<SQL_HANDLE_STMT> hStmt(hDbc);
+		_tprintf(_T("Enter SQL commands, type(control)Z to exit\nSQL COMMAND>"));
 
-	TCHAR wszInput[SQL_QUERY_SIZE]{};
-	// Loop to get input and execute queries
-	while (_fgetts(wszInput, SQL_QUERY_SIZE - 1, stdin))
-	{
-		// Execute the query
-		if (!(*wszInput))
+		TCHAR wszInput[SQL_QUERY_SIZE]{};
+		// Loop to get input and execute queries
+		while (_fgetts(wszInput, SQL_QUERY_SIZE - 1, stdin))
 		{
-			wprintf(L"SQL COMMAND>");
-			continue;
+			// Execute the query
+			if (!(*wszInput))
+			{
+				_tprintf(_T("SQL COMMAND>"));
+				continue;
+			}
+			if (!_tcsicmp(wszInput, _T("exit\n"))
+				||!_tcsicmp(wszInput, _T("quit\n"))
+				||!_tcsicmp(wszInput, _T("logout\n")))
+			{
+				break;
+			}
+			hStmt.TryExec(wszInput);
+			_tprintf(_T("SQL COMMAND>"));
 		}
-		hStmt.TryExec(wszInput);
-		wprintf(L"SQL COMMAND>");
 	}
-
+	catch (const odbc_exception& exc)
+	{
+		std::cerr << exc.what() << "\n";
+	}
 	// Free ODBC handles and exit
-	wprintf(L"\nDisconnected.");
+	_tprintf(_T("\nDisconnected."));
 	return 0;
 }
 
@@ -256,13 +264,13 @@ void DisplayResults(HSTMT hStmt, SQLSMALLINT cCols)
 
 			while (!fEnterReceived)
 			{
-				wprintf(L" ");
+				_tprintf(_T(" "));
 				SetConsole(cDisplaySize + 2, TRUE);
-				wprintf(L" Press ENTER to continue, Q to quit (height:%hd)", gHeight);
+				_tprintf(_T("Press ENTER to continue, Q to quit(height: % hd)"), gHeight);
 				SetConsole(cDisplaySize + 2, FALSE);
 
 				nInputChar = _getch();
-				wprintf(L"\n");
+				_tprintf(_T("\n"));
 				if ((nInputChar == 'Q') || (nInputChar == 'q'))
 				{
 					goto Exit;
@@ -290,7 +298,7 @@ void DisplayResults(HSTMT hStmt, SQLSMALLINT cCols)
 			{
 				if (pThisBinding->indPtr != SQL_NULL_DATA)
 				{
-					wprintf(pThisBinding->fChar ? DISPLAY_FORMAT_C : DISPLAY_FORMAT,
+					_tprintf(pThisBinding->fChar ? DISPLAY_FORMAT_C : DISPLAY_FORMAT,
 						PIPE,
 						pThisBinding->cDisplaySize,
 						pThisBinding->cDisplaySize,
@@ -298,21 +306,21 @@ void DisplayResults(HSTMT hStmt, SQLSMALLINT cCols)
 				}
 				else
 				{
-					wprintf(DISPLAY_FORMAT_C,
+					_tprintf(DISPLAY_FORMAT_C,
 						PIPE,
 						pThisBinding->cDisplaySize,
 						pThisBinding->cDisplaySize,
 						_T("<NULL>"));
 				}
 			}
-			wprintf(L" %c\n", PIPE);
+			_tprintf(_T(" %c\n"), PIPE);
 		}
 	} while (!fNoData);
 
 	SetConsole(cDisplaySize + 2, TRUE);
-	wprintf(L"%*.*s", cDisplaySize + 2, cDisplaySize + 2, L" ");
+	_tprintf(_T("%*.*s"), cDisplaySize + 2, cDisplaySize + 2, _T(" "));
 	SetConsole(cDisplaySize + 2, FALSE);
-	wprintf(L"\n");
+	_tprintf(_T("\n"));
 
 Exit:
 	// Clean up the allocated buffers
@@ -344,7 +352,7 @@ void AllocateBindings(HSTMT hStmt, SQLSMALLINT cCols, BINDING** ppBinding, SQLSM
 		pThisBinding = (BINDING*)(malloc(sizeof(BINDING)));
 		if (!(pThisBinding))
 		{
-			fwprintf(stderr, L"Out of memory!\n");
+			_ftprintf(stderr, _T("Out of memory!\n"));
 			exit(-100);
 		}
 
@@ -389,7 +397,7 @@ void AllocateBindings(HSTMT hStmt, SQLSMALLINT cCols, BINDING** ppBinding, SQLSM
 		pThisBinding->wszBuffer = (TCHAR*)malloc((cchDisplay + 1) * sizeof(TCHAR));
 		if (!(pThisBinding->wszBuffer))
 		{
-			fwprintf(stderr, L"Out of memory!\n");
+			_ftprintf(stderr, _T("Out of memory!\n"));
 			exit(-100);
 		}
 
@@ -439,11 +447,11 @@ void DisplayTitles(HSTMT hStmt, DWORD cDisplaySize, BINDING* pBinding)
 			SQLColAttribute(hStmt, iCol++, SQL_DESC_NAME, wszTitle,
 				sizeof(wszTitle), // Note count of bytes!
 				NULL, NULL));
-		wprintf(DISPLAY_FORMAT_C, PIPE, pBinding->cDisplaySize, pBinding->cDisplaySize, wszTitle);
+		_tprintf(DISPLAY_FORMAT_C, PIPE, pBinding->cDisplaySize, pBinding->cDisplaySize, wszTitle);
 	}
-	wprintf(L" %c", PIPE);
+	_tprintf(_T(" %c"), PIPE);
 	SetConsole(cDisplaySize + 2, FALSE);
-	wprintf(L"\n");
+	_tprintf(_T("\n"));
 }
 
 //SetConsole: sets console display size and video mode
@@ -486,12 +494,12 @@ void SetConsole(DWORD dwDisplaySize, BOOL fInvert)
 //hHandle ODBC handle
 //hType Type of handle (HANDLE_STMT, HANDLE_ENV, HANDLE_DBC)
 //RetCode Return code of failing command
-void HandleDiagnosticRecord(SQLHANDLE hHandle, SQLSMALLINT hType, RETCODE RetCode)
+void HandleDiagnosticRecord(SQLHANDLE hHandle, SQLSMALLINT hType, RETCODE RetCode, const std::source_location& loc)
 {
 
 	if (RetCode == SQL_INVALID_HANDLE)
 	{
-		fwprintf(stderr, L"Invalid handle!\n");
+		_ftprintf(stderr, _T("Invalid handle! %s : %d\n"), loc.file_name(), loc.line());
 		return;
 	}
 	if (hHandle==SQL_NULL_HANDLE)
@@ -501,17 +509,17 @@ void HandleDiagnosticRecord(SQLHANDLE hHandle, SQLSMALLINT hType, RETCODE RetCod
 
 	SQLSMALLINT iRec = 0;
 	SQLINTEGER iError;
-	TCHAR wszMessage[1000];
-	TCHAR wszState[SQL_SQLSTATE_SIZE + 1];
-	while (SQLGetDiagRec(hType, hHandle, ++iRec, wszState, &iError, wszMessage,
-		(SQLSMALLINT)(sizeof(wszMessage) / sizeof(TCHAR)), (SQLSMALLINT*)NULL)
+	SQLTCHAR wszMessage[1000]{};
+	TCHAR wszState[SQL_SQLSTATE_SIZE + 1]{};
+	while (SQLGetDiagRecA(hType, hHandle, ++iRec, (SQLTCHAR*)wszState, &iError, wszMessage,
+		(SQLSMALLINT)(sizeof(wszMessage) / sizeof(SQLTCHAR)), (SQLSMALLINT*)NULL)
 		== SQL_SUCCESS
 		)
 	{
 		// Hide data truncated..
-		if (wcsncmp(wszState, L"01004", 5))
+		if (_tcsncmp(wszState, _T("01004"), 5))
 		{
-			fwprintf(stderr, L"[%5.5s] %s (%d)\n", wszState, wszMessage, iError);
+			_ftprintf(stderr, _T("[%5.5s] %s (%d) at %s : %d\n"), wszState, wszMessage, iError, loc.file_name(),loc.line());
 		}
 	}
 }
