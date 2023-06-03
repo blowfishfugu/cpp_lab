@@ -88,11 +88,11 @@ constexpr const TCHAR PIPE = _T('|');
 SHORT gHeight = 80; // Users screen height (adapts)
 
 template<SQLSMALLINT handleType=SQL_HANDLE_ENV>
-struct OdbcHandle
+struct OdbcHandleOwner
 {
 	SQLHANDLE handle = SQL_NULL_HANDLE;
 	SQLSMALLINT type;
-	OdbcHandle(SQLHANDLE parentHandle=SQL_NULL_HANDLE)
+	OdbcHandleOwner(SQLHANDLE parentHandle=SQL_NULL_HANDLE)
 		: type{handleType}
 	{
 		if constexpr (handleType != SQL_HANDLE_ENV)
@@ -114,7 +114,15 @@ struct OdbcHandle
 		}
 	}
 	
-	~OdbcHandle()
+	//nicht kopierbar, ansonsten benötigt man bool im destructor, ob freehandle aufgerufen wird
+	OdbcHandleOwner(const OdbcHandleOwner&) = delete;
+	OdbcHandleOwner(const OdbcHandleOwner&&) = delete;
+	OdbcHandleOwner operator=(const OdbcHandleOwner&) = delete;
+	OdbcHandleOwner operator=(const OdbcHandleOwner&&) = delete;
+	
+	operator SQLHANDLE() { return handle; }
+
+	~OdbcHandleOwner()
 	{
 		if (handle)
 		{
@@ -126,7 +134,6 @@ struct OdbcHandle
 		}
 	}
 
-	operator SQLHANDLE() { return handle; }
 
 	void TryConnect(const TCHAR* pwszConnStr)
 	{
@@ -190,21 +197,27 @@ struct OdbcHandle
 
 int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 {
-	const TCHAR* pwszConnStr = _T("DRIVER={SQL Server};SERVER=MENACE\\SQL2012;DATABASE=destatis;Trusted_Connection=Yes");
+	const TCHAR* pwszConnStr = 
+		_T("DRIVER={ODBC Driver 18 for SQL Server}")
+		_T(";SERVER=MENACE\\SQL2012")
+		_T(";DATABASE=destatis")
+		_T(";Trusted_Connection=YES")
+		_T(";Encrypt=YES")
+		_T(";TrustServerCertificate=YES");
 	if (argc > 1)
 	{
 		pwszConnStr = *++argv;
 	}
 	try {
-		OdbcHandle<SQL_HANDLE_ENV> env;
-		OdbcHandle<SQL_HANDLE_DBC> hDbc(env);
+		OdbcHandleOwner<SQL_HANDLE_ENV> env;
+		OdbcHandleOwner<SQL_HANDLE_DBC> hDbc(env);
 
 		// Connect to the driver. Use the connection string if supplied
 		// on the input, otherwise let the driver manager prompt for input.
 		hDbc.TryConnect(pwszConnStr);
 		_ftprintf(stderr, _T("Connected!\n"));
 
-		OdbcHandle<SQL_HANDLE_STMT> hStmt(hDbc);
+		OdbcHandleOwner<SQL_HANDLE_STMT> hStmt(hDbc);
 		_tprintf(_T("Enter SQL commands, type(control)Z to exit\nSQL COMMAND>"));
 
 		TCHAR wszInput[SQL_QUERY_SIZE]{};
@@ -511,7 +524,7 @@ void HandleDiagnosticRecord(SQLHANDLE hHandle, SQLSMALLINT hType, RETCODE RetCod
 	SQLINTEGER iError;
 	SQLTCHAR wszMessage[1000]{};
 	TCHAR wszState[SQL_SQLSTATE_SIZE + 1]{};
-	while (SQLGetDiagRecA(hType, hHandle, ++iRec, (SQLTCHAR*)wszState, &iError, wszMessage,
+	while (SQLGetDiagRecA(hType, hHandle, ++iRec /*startindex=1*/, (SQLTCHAR*)wszState, &iError, wszMessage,
 		(SQLSMALLINT)(sizeof(wszMessage) / sizeof(SQLTCHAR)), (SQLSMALLINT*)NULL)
 		== SQL_SUCCESS
 		)
