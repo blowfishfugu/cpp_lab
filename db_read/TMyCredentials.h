@@ -3,21 +3,15 @@
 #include <string>
 #include <tchar.h>
 #include <format>
-using namespace std::literals;
 
+template<typename String=std::string,typename StringView=std::string_view>
 class TMyCredentials {
-#ifdef UNICODE
-	using String = std::wstring;
-	using StringView = std::wstring_view;
-#else
-	using String = std::string;
-	using StringView = std::string_view;
-#endif
+
 private:
 	std::tuple<String, String> data;
 public:
 
-	constexpr TMyCredentials(String const& usr, String const& pwd) 
+	constexpr TMyCredentials(StringView const& usr, StringView const& pwd) 
 		: data{ usr,pwd } 
 	{};
 	constexpr TMyCredentials()

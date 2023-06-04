@@ -14,7 +14,6 @@
 //DisplayTitles Print column titles
 //SetConsole Set console display mode
 //HandleError Show ODBC error messages
-#include "TMyCredentials.h"
 
 #define NOMINMAX
 #include <windows.h>
@@ -31,16 +30,8 @@
 #include <string>
 #include <string_view>
 #include <source_location>
+#include <format>
 #include <iostream>
-#ifdef UNICODE
-using String = std::wstring;
-using StringView = std::wstring_view;
-#else
-using String = std::string;
-using StringView = std::string_view;
-#endif
-
-using LoginData = TMyCredentials;
 
 struct odbc_exception : public std::exception
 {
@@ -116,11 +107,12 @@ struct OdbcHandleOwner
 	
 	//nicht kopierbar, ansonsten benötigt man bool im destructor, ob freehandle aufgerufen wird
 	OdbcHandleOwner(const OdbcHandleOwner&) = delete;
-	OdbcHandleOwner(const OdbcHandleOwner&&) = delete;
+	OdbcHandleOwner(OdbcHandleOwner&&) = delete;
 	OdbcHandleOwner operator=(const OdbcHandleOwner&) = delete;
-	OdbcHandleOwner operator=(const OdbcHandleOwner&&) = delete;
+	OdbcHandleOwner operator=(OdbcHandleOwner&&) = delete;
 	
 	operator SQLHANDLE() { return handle; }
+	operator bool() { return handle != SQL_NULL_HANDLE; }
 
 	~OdbcHandleOwner()
 	{
@@ -138,7 +130,7 @@ struct OdbcHandleOwner
 	void TryConnect(const TCHAR* pwszConnStr)
 	{
 		static_assert(handleType == SQL_HANDLE_DBC, "TryConnect only callable on hdbc-Handles");
-		SQLRETURN rc = SQLDriverConnectA(
+		SQLRETURN rc = SQLDriverConnect(
 			handle, GetDesktopWindow(),
 			(SQLTCHAR*)pwszConnStr, //const_cast, weil sqldriverconnect es so möchte
 			SQL_NTS, NULL, 0, NULL, SQL_DRIVER_COMPLETE);
@@ -195,9 +187,9 @@ struct OdbcHandleOwner
 	}
 };
 
-int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
+int sample(int argc, _In_reads_(argc) char** argv)
 {
-	const TCHAR* pwszConnStr = 
+	const char* pwszConnStr = 
 		_T("DRIVER={ODBC Driver 18 for SQL Server}")
 		_T(";SERVER=MENACE\\SQL2012")
 		_T(";DATABASE=destatis")
