@@ -11,6 +11,14 @@
 #include <source_location>
 #include <iostream>
 #include <format>
+#include <array>
+#include <numeric>
+struct odbc_exception : public std::exception
+{
+	odbc_exception(std::string msg) : std::exception(msg.c_str())
+	{}
+};
+
 
 
 std::tuple<SQLHANDLE, SQLRETURN, bool> getHenv(bool release)
@@ -36,35 +44,57 @@ std::tuple<SQLHANDLE, SQLRETURN, bool> getHenv(bool release)
 	return { handle,rc,wasNew };
 }
 
+template<bool shouldThrow=false>
 void printDiagnostics(SQLRETURN RetCode, SQLSMALLINT handleType, SQLHANDLE context, const std::source_location& loc)
 {
-	if (RetCode == SQL_INVALID_HANDLE)
+	if (RetCode != SQL_SUCCESS)
 	{
-		std::cerr << std::format("Invalid handle! {} : {}\n", loc.file_name(), loc.line());
-		return;
-	}
-	if (context == SQL_NULL_HANDLE)
-	{
-		return;
+		if (RetCode == SQL_INVALID_HANDLE)
+		{
+			std::cerr << std::format("Invalid handle! {} : {}\n", loc.file_name(), loc.line());
+			return;
+		}
+		if (context == SQL_NULL_HANDLE)
+		{
+			return;
+		}
+
+		
+		//[ vendor-identifier ][ ODBC-component-identifier ] component-supplied-text
+		//[ vendor-identifier ][ ODBC-component-identifier ][ data-source-identifier ] data-source-supplied-text
+		SQLSMALLINT returnedMessageSize = 0;
+		std::array<char, 1024> wszMessage{};
+		SQLINTEGER iError = 0;
+		std::array<char, SQL_SQLSTATE_SIZE + 1> wszState{};
+
+		SQLSMALLINT iRec = 0;
+		while (SQLGetDiagRec(handleType, context, ++iRec /*startindex=1*/,
+			(SQLCHAR*)wszState.data(), &iError, (SQLCHAR*)wszMessage.data(),
+			(SQLSMALLINT)wszMessage.size(), //<- ist einfach Anzahl Zeichen, nicht anzahl bytes
+			&returnedMessageSize)
+			== SQL_SUCCESS
+			)
+		{
+			if (std::string_view stateID{ wszState.data(),5 }; stateID.compare( _T("01004"))!=0 )
+			{
+				const size_t messageLen = std::min(wszMessage.size() - 1, (size_t)returnedMessageSize);
+				std::string_view fullMessage{ wszMessage.data(), messageLen };
+				std::cerr << std::format("[{}] {} (NativeError: {}) at {} :Z{}\n", wszState.data(), fullMessage.data(), iError, loc.file_name(), loc.line());
+			}
+			//reset
+			wszMessage.fill(0);//<-memset(&message,0,count)
+			wszState.fill(0);
+			returnedMessageSize = 0;
+			iError = 0;
+		}
+
 	}
 
-	SQLSMALLINT iRec = 0;
-	SQLINTEGER iError;
-	SQLCHAR wszMessage[1000]{};
-	constexpr SQLSMALLINT charCount = (SQLSMALLINT)(sizeof(wszMessage) / sizeof(SQLCHAR));
-	// -> _ARRAYSIZE(wszMessage);
-	TCHAR wszState[SQL_SQLSTATE_SIZE + 1]{}; //<- TODO: std::string
-	while (SQLGetDiagRec(handleType, context, ++iRec /*startindex=1*/, 
-		(SQLCHAR*)wszState, &iError, wszMessage,
-		charCount, //<- ist einfach Anzahl Zeichen, nicht anzahl bytes
-		(SQLSMALLINT*)NULL)
-		== SQL_SUCCESS
-		)
+	if constexpr (shouldThrow)
 	{
-		// Hide data truncated..
-		if (_tcsncmp(wszState, _T("01004"), 5)) //<- TODO: string_view(0,5)==01004 ?
+		if (RetCode == SQL_ERROR)
 		{
-			std::cerr << std::format("[{}] {} ({}) at {} : {}\n", wszState, (TCHAR*)wszMessage, iError, loc.file_name(), loc.line());
+			throw odbc_exception(std::format("Error in {} : {}", loc.file_name(), loc.line()));
 		}
 	}
 }
