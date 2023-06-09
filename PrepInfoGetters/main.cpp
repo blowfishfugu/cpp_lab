@@ -88,18 +88,26 @@ void outputRow(std::ostream& os, const row& item)
 	{
 		getFunc = "_getNumeric<SQLUSMALLINT>";
 	}
-	//SQLUINTEGER bitmask
+	//SQLUINTEGER bitmask, bekam eigenen struct für speziellen cout
 	else if (info.find("SQLUINTEGER bitmask") != std::string::npos)
 	{
-		getFunc = "_getNumeric<SQLUINTEGER> /*bitmask*/";
+		getFunc = "_getNumeric<BitMask>";
 	}
 	else if (info.find("SQLUINTEGER") != std::string::npos)
+	{
+		getFunc = "_getNumeric<SQLUINTEGER>";
+	}
+	else if (info.find("SQLINTEGER") != std::string::npos) //gibts nur einen
 	{
 		getFunc = "_getNumeric<SQLUINTEGER>";
 	}
 	else if (info.find("character string") != std::string::npos)
 	{
 		getFunc = "_getInfoString";
+	}
+	else if (info.find("SQLULEN") != std::string::npos) //returns HANDLE
+	{
+		getFunc = "_getNumeric<SQLULEN>";
 	}
 	os << std::format("{{ {}, {{ \"{}\", {} }} }},\n", name, name, getFunc);
 }
@@ -112,7 +120,7 @@ std::ostream& operator<<(std::ostream& os, const row& item)
 	{
 		return os;
 	}
-	if (name.find("<br/>") != std::string::npos)
+	if (name.find("<br/>") != std::string::npos) //Sql_Convert_* kommen in einer Zelle
 	{
 		std::string_view splitter{ "<br/>" };
 		for (const auto names : std::views::split(name, splitter))
