@@ -21,6 +21,7 @@ int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 	std::cerr << "try connect\n";
 	db.TryConnect(pwszConnStr);
 	std::cerr << (db ?(SQLHANDLE)db:"no db") << " connected=" << db.connected << "\n";
+	std::cout << db.GetInfo(SQL_SPECIAL_CHARACTERS) << "\n";
 	std::vector<InfoReturn> infos=db.GetRegisteredInfos();
 	for (const auto& info : infos)
 	{
