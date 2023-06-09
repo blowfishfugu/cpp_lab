@@ -107,13 +107,13 @@ struct HDbc {
 
 	InfoReturn GetInfo(SQLUSMALLINT infoType, std::string name, Getters::GetterFunc infoFunc)
 	{
-		if (!hdbc) { return { name,std::nullptr_t{} }; }
+		if (!hdbc) { return { name,std::nullptr_t{}, {{"hdbc is null"}} }; }
 		return infoFunc(hdbc, infoType, name);
 	}
 
 	InfoReturn GetInfo(SQLUSMALLINT infoType)
 	{
-		if (!hdbc) { return { "",std::nullptr_t{} }; }
+		if (!hdbc) { return { "",std::nullptr_t{}, {{"hdbc is null"}} }; }
 
 		if (const auto& infoVal = Getters::infoGetters.find(infoType); 
 			infoVal != Getters::infoGetters.end()
@@ -122,21 +122,13 @@ struct HDbc {
 			const auto& [name, getter] = infoVal->second;
 			return getter(hdbc, infoType, name);
 		}
-		return { std::format("unkown infoType:{}",infoType),std::nullptr_t{} };
+		return { std::format("{}",infoType),std::nullptr_t{}, {{"unknown infoType"}}};
 	}
 
 	std::vector<InfoReturn> GetRegisteredInfos()
 	{
 		if (!hdbc) { return {}; }
-		size_t sum = Getters::driverInfos.size() 
-			+ Getters::dbmsInfos.size() 
-			+ Getters::dataSourceInfos.size()
-			+ Getters::infoSqlCapabilities.size() 
-			+ Getters::infoSqlLimits.size() 
-			+ Getters::infoScalarFunctions.size()
-			+ Getters::infoConvertibles.size();
-		std::cerr << sum << "\n";
-
+		
 		std::vector<InfoReturn> infos;
 		infos.reserve(Getters::infoGetters.size());
 		for (const auto& infoVal : Getters::infoGetters)
