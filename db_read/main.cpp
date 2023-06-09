@@ -18,12 +18,14 @@ int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 	}
 
 	HDbc db;
+	std::cerr << "try connect\n";
 	db.TryConnect(pwszConnStr);
-	auto info=db.GetInfo(SQL_DATABASE_NAME);
-	std::cout << info << "\n";
-	auto info2 = db.GetInfo(SQL_ACTIVE_ENVIRONMENTS);
-	std::cout << info2 << "\n";
-	
+	std::cerr << (db ?(SQLHANDLE)db:"no db") << " connected=" << db.connected << "\n";
+	std::vector<InfoReturn> infos=db.GetRegisteredInfos();
+	for (const auto& info : infos)
+	{
+		std::cout << info << "\n";
+	}
 	return 0;
 
 	return sample(argc, argv);

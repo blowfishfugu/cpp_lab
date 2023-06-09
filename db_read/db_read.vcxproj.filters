@@ -32,5 +32,11 @@
     <ClInclude Include="bff_odbc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="bff_odbcinfos.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bff_diagnostics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

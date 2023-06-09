@@ -85,7 +85,9 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="bff_diagnostics.h" />
     <ClInclude Include="bff_odbc.h" />
+    <ClInclude Include="bff_odbcinfos.h" />
     <ClInclude Include="sample.h" />
     <ClInclude Include="TMyCredentials.h" />
   </ItemGroup>
