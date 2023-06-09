@@ -97,7 +97,7 @@ void outputRow(std::ostream& os, const row& item)
 	{
 		getFunc = "_getNumeric<SQLUINTEGER>";
 	}
-	else if (info.find("SQLINTEGER") != std::string::npos) //gibts nur einen
+	else if (info.find("SQLINTEGER") != std::string::npos) //gibts nur einen (SQL_POS_OPERATIONS)
 	{
 		getFunc = "_getNumeric<SQLUINTEGER>";
 	}
