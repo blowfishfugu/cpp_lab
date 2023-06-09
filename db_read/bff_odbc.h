@@ -128,6 +128,14 @@ struct HDbc {
 	std::vector<InfoReturn> GetRegisteredInfos()
 	{
 		if (!hdbc) { return {}; }
+		size_t sum = Getters::driverInfos.size() 
+			+ Getters::dbmsInfos.size() 
+			+ Getters::dataSourceInfos.size()
+			+ Getters::infoSqlCapabilities.size() 
+			+ Getters::infoSqlLimits.size() 
+			+ Getters::infoScalarFunctions.size()
+			+ Getters::infoConvertibles.size();
+		std::cerr << sum << "\n";
 
 		std::vector<InfoReturn> infos;
 		infos.reserve(Getters::infoGetters.size());
