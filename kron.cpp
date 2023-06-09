@@ -63,16 +63,16 @@ TEST(kron, weekdays)
 	namespace chrono = std::chrono;
 	namespace date = std::chrono; // std::chrono;
 	using namespace std::chrono_literals;
-	
+	constexpr int year = 2022;
 	date::month m = date::January;
 	date::year_month_day today=date::floor<date::days>(std::chrono::system_clock::now());
 	std::cout << is_weekend(today) << "\n";
 
 	do {
-		date::year_month_day_last ym_last{ 2022y / m / date::last };
+		date::year_month_day_last ym_last{ date::year{year} / m / date::last };
 		//std::cout <<  ym_last.month() << " " << static_cast<unsigned>(ym_last.day()) << "\n";
 		
-		const date::year_month_day from{ 2022y / m / 1 };
+		const date::year_month_day from{ date::year{year} / m / 1 };
 		const date::year_month_day to{ ym_last };
 		std::cout << from << " " << to <<"\n";
 		int daycount = 0;

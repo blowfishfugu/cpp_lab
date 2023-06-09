@@ -1,5 +1,11 @@
 # Prerequisites
 *.d
+# Archives
+*.zip
+*.gz
+*.tar
+*.7z
+*.bz
 
 # Compiled Object files
 *.slo
