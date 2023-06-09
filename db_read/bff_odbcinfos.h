@@ -46,11 +46,11 @@ std::ostream& operator<<(std::ostream& os, const InfoReturn& infoVal)
 	else if (std::holds_alternative<BitMask>(info))
 	{
 		constexpr int bits = sizeof(SQLUINTEGER)*8;
-		os << std::format("{}={:0{}b}", name, std::get<BitMask>(info).val,bits );
+		os << std::format("{}={:#0{}b}", name, std::get<BitMask>(info).val,bits );
 	}
 	else if (std::holds_alternative<SQLULEN>(info))
 	{
-		os << std::format("{}={}", name, std::get<SQLULEN>(info));
+		os << std::format("{}={:#x}", name, std::get<SQLULEN>(info));
 	}
 	return os;
 }
@@ -371,7 +371,8 @@ SQL_CONVERT_VARCHAR						 ,
 	{ SQL_DESCRIBE_PARAMETER, { "SQL_DESCRIBE_PARAMETER", _getInfoString } },
 	{ SQL_DM_VER, { "SQL_DM_VER", _getInfoString } },
 	{ SQL_DRIVER_AWARE_POOLING_SUPPORTED, { "SQL_DRIVER_AWARE_POOLING_SUPPORTED", _getNumeric<SQLUINTEGER> } },
-	//{ SQL_DRIVER_HDBCSQL_DRIVER_HENV, { "SQL_DRIVER_HDBCSQL_DRIVER_HENV", _getNumeric<SQLULEN> } },
+	{ SQL_DRIVER_HDBC, { "SQL_DRIVER_HDBC", _getNumeric<SQLULEN> } },
+	{ SQL_DRIVER_HENV, { "SQL_DRIVER_HENV", _getNumeric<SQLULEN> } },
 	{ SQL_DRIVER_HDESC, { "SQL_DRIVER_HDESC", _getNumeric<SQLULEN> } },
 	{ SQL_DRIVER_HLIB, { "SQL_DRIVER_HLIB", _getNumeric<SQLULEN> } },
 	{ SQL_DRIVER_HSTMT, { "SQL_DRIVER_HSTMT", _getNumeric<SQLULEN> } },
@@ -439,7 +440,7 @@ SQL_CONVERT_VARCHAR						 ,
 	{ SQL_ORDER_BY_COLUMNS_IN_SELECT, { "SQL_ORDER_BY_COLUMNS_IN_SELECT", _getInfoString } },
 	{ SQL_PARAM_ARRAY_ROW_COUNTS, { "SQL_PARAM_ARRAY_ROW_COUNTS", _getNumeric<SQLUINTEGER> } },
 	{ SQL_PARAM_ARRAY_SELECTS, { "SQL_PARAM_ARRAY_SELECTS", _getNumeric<SQLUINTEGER> } },
-	{ SQL_POS_OPERATIONS, { "SQL_POS_OPERATIONS", _getNumeric<SQLUINTEGER> } }, //SQLINTEGER bitmask
+	{ SQL_POS_OPERATIONS, { "SQL_POS_OPERATIONS", _getNumeric<SQLUINTEGER> } },
 	{ SQL_PROCEDURE_TERM, { "SQL_PROCEDURE_TERM", _getInfoString } },
 	{ SQL_PROCEDURES, { "SQL_PROCEDURES", _getInfoString } },
 	{ SQL_QUOTED_IDENTIFIER_CASE, { "SQL_QUOTED_IDENTIFIER_CASE", _getNumeric<SQLUSMALLINT> } },
@@ -478,6 +479,7 @@ SQL_CONVERT_VARCHAR						 ,
 	{ SQL_USER_NAME, { "SQL_USER_NAME", _getInfoString } },
 	{ SQL_XOPEN_CLI_YEAR, { "SQL_XOPEN_CLI_YEAR", _getInfoString } },
 	};
+
 
 
 
