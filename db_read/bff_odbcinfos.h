@@ -23,7 +23,7 @@ struct BitMask
 };
 
 using InfoValType = std::variant<std::nullptr_t, std::string, SQLUSMALLINT, SQLUINTEGER, SQLULEN,BitMask>;
-//Name,ReturnValue
+//Name,ReturnValue,Diagnostic-Messages
 using InfoReturn = std::tuple<std::string, InfoValType, std::optional<std::vector<std::string>> >;
 
 //kann man da early abort machen? entfaltet VariantType über alle möglichkeiten
@@ -39,6 +39,7 @@ using InfoReturn = std::tuple<std::string, InfoValType, std::optional<std::vecto
 std::ostream& operator<<(std::ostream& os, const InfoReturn& infoVal)
 {
 	const auto& [name, info,diagnostics] = infoVal;
+	//std::visit([&os](auto const& e){ os << e; }, info);
 	if (std::holds_alternative<std::nullptr_t>(info))
 	{
 		os << std::format("{}=(null)", name);

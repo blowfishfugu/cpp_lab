@@ -64,12 +64,98 @@ struct HEnv {
 	}
 	operator bool() { return henv != SQL_NULL_HANDLE; }
 	operator SQLHANDLE() { return henv; }
+
+	using DriverInfo = std::tuple<std::string, SQLSMALLINT, std::string, SQLSMALLINT>;
+	std::vector<DriverInfo> GetDrivers()
+	{
+		if (!henv) { return {}; }
+
+		std::vector<DriverInfo> infos;
+
+		SQLRETURN rc = SQL_SUCCESS;
+		SQLUSMALLINT direction = SQL_FETCH_FIRST;
+		while (SQL_SUCCEEDED(rc))
+		{
+			DriverInfo info{};
+			SQLSMALLINT& descLen = std::get<1>(info);
+			SQLSMALLINT& attrLen = std::get<3>(info);
+			rc=SQLDrivers(henv, direction, NULL, NULL, &descLen, NULL, NULL, &attrLen);
+			direction = SQL_FETCH_NEXT;
+			printDiagnostics(rc, SQL_HANDLE_ENV, henv, std::source_location::current());
+			if (!SQL_SUCCEEDED(rc) || rc == SQL_NO_DATA)
+			{
+				break;
+			}
+			descLen++; //trailing 0
+			attrLen++;
+			descLen += (descLen & 0x01); //make even
+			attrLen += (attrLen & 0x01);
+			infos.emplace_back(info);
+		}
+
+		rc = SQL_SUCCESS;
+		direction = SQL_FETCH_FIRST;
+		size_t pos = 0LL;
+		while (SQL_SUCCEEDED(rc) && pos<infos.size())
+		{
+			DriverInfo& info = infos[pos]; 
+			++pos;
+			auto& [desc, descLen, attr, attrLen] = info;
+			desc.resize(descLen, '\0'); // fuer wchar?: bytes to charcount -> sizeof(decltype(desc)::value_type);
+			attr.resize(attrLen, '\0');
+			rc = SQLDrivers(henv, direction, 
+				(SQLCHAR*)desc.data(), descLen, &descLen,
+				(SQLCHAR*)attr.data(), attrLen, &attrLen);
+			direction = SQL_FETCH_NEXT;
+			printDiagnostics(rc, SQL_HANDLE_ENV, henv, std::source_location::current());
+			if (!SQL_SUCCEEDED(rc) || rc == SQL_NO_DATA)
+			{
+				break;
+			}
+		}
+		return infos;
+	}
+};
+
+struct Query
+{
+	HSTMT const& stmt;
+	std::string sql;
+	Query() = delete;
+	Query(HSTMT const& statement, std::string_view _sql="") : stmt(statement), sql(_sql) {};
+	void SetSql(std::string_view sqlStatement)
+	{
+		CloseIfNecessary();
+		this->sql = sqlStatement;
+	}
+	bool didExec = false;
+	std::function<void(Query& self)> OnBindParameters;
+	std::function<void(Query& self)> OnBindResults;
+	std::function<void(Query& self)> OnFetchedResult;
+	std::function<void(Query& self)> OnCountResult;
+
+	void CloseIfNecessary()
+	{
+		if (didExec && stmt)
+		{
+			SQLRETURN rc = SQLCloseCursor(stmt);
+			printDiagnostics(rc, SQL_HANDLE_STMT, stmt, std::source_location::current());
+		}
+		didExec = false;
+	}
+	~Query() {
+		CloseIfNecessary();
+	}
 };
 
 struct HDbc {
 	SQLHANDLE hdbc = SQL_NULL_HANDLE;
 	HEnv _env;
 	bool connected = false;
+	//HSTMT, executioncontext.. benötigt alloc/free, aber auch ein CloseCursor nach jeder Abfrage
+	//free wird ueber HDbc intern geregelt
+	//CloseCursor ueber Query
+	SQLHANDLE statement = SQL_NULL_HANDLE; 
 	HDbc()
 	{
 		if (_env)
@@ -80,6 +166,11 @@ struct HDbc {
 	}
 	~HDbc()
 	{
+		if (statement)
+		{
+			SQLFreeHandle(SQL_HANDLE_STMT, statement);
+			statement = SQL_NULL_HANDLE;
+		}
 		if (hdbc)
 		{
 			if (connected)
@@ -103,8 +194,17 @@ struct HDbc {
 			printDiagnostics<true>(rc, SQL_HANDLE_DBC, hdbc, std::source_location::current());
 			connected = SQL_SUCCEEDED(rc);
 		}
-	}
 
+		if (connected && hdbc && !statement)
+		{
+			SQLRETURN rc = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &statement);
+			printDiagnostics<true>(rc, SQL_HANDLE_DBC, hdbc, std::source_location::current());
+			connected = SQL_SUCCEEDED(rc);
+		}
+	}
+	Query CreateQuery(std::string_view sql) {
+		return Query(statement, sql);
+	}
 	InfoReturn GetInfo(SQLUSMALLINT infoType, std::string name, Getters::GetterFunc infoFunc)
 	{
 		if (!hdbc) { return { name,std::nullptr_t{}, {{"hdbc is null"}} }; }

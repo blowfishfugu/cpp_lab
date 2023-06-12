@@ -18,6 +18,14 @@ int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 	}
 
 	HDbc db;
+	std::vector<HEnv::DriverInfo> drivers=db._env.GetDrivers();
+	for (const auto& driver : drivers)
+	{
+		const auto& [desc, descLen, attr, attrLen] = driver;
+		std::cout << desc << "\n";
+		std::cout << attr << "\n";
+	}
+
 	std::cerr << "try connect\n";
 	db.TryConnect(pwszConnStr);
 	std::cerr << (db ?(SQLHANDLE)db:"no db") << " connected=" << db.connected << "\n";
@@ -27,6 +35,9 @@ int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 	{
 		std::cout << info << "\n";
 	}
+
+	Query q = db.CreateQuery("SELECT * FROM de");
+	
 	return 0;
 
 	return sample(argc, argv);
