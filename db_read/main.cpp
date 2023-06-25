@@ -6,7 +6,7 @@
 
 
 #include "../sequential_read/StopWatch.h"
-const int loopCount = 500000;
+const int loopCount = 50000;
 void helloPrint0()
 {
 	printf("Hello World!\n");
@@ -23,10 +23,10 @@ void helloPrint1()
 	{
 		int z = i % 4;
 		switch (z) {
-		case(0):printf("\b|"); break;
-		case(1):printf("\b/"); break;
-		case(2):printf("\b-"); break;
-		case(3):printf("\b\\"); break;
+		case(0):printf("|\r"); break;
+		case(1):printf("/\r"); break;
+		case(2):printf("-\r"); break;
+		case(3):printf("\\\r"); break;
 		default: break;
 		}
 	}
@@ -34,7 +34,7 @@ void helloPrint1()
 
 void helloPrint2()
 {
-	static const char rot[4][3]{"\b|","\b/","\b-","\b\\"};
+	static const char rot[4][3]{"|\r","/\r","-\r","\\\r"};
 	printf("Hello World!\n");
 	for (int i = 0; i < loopCount; ++i)
 	{
@@ -44,7 +44,7 @@ void helloPrint2()
 
 void helloPrint3()
 {
-	static char rot[4][3]{ "\b|","\b/","\b-","\b\\" };
+	static char rot[4][3]{"|\r","/\r","-\r","\\\r"};
 	static const size_t N = 2 << 7;
 	static char* table[N];
 	for (int i = 0; i < N; ++i)
