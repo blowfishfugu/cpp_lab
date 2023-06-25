@@ -6,13 +6,22 @@
 
 
 #include "../sequential_read/StopWatch.h"
-const int loopCount = 50000;
+const int loopCount = 100000;
 void helloPrint0()
 {
 	printf("Hello World!\n");
 	for (int i = 0; i < loopCount; ++i)
 	{
 		if ((i%4) == 0) { printf("%d\r", i); }
+	}
+}
+
+void helloPrint0_unfiltered()
+{
+	printf("Hello World!\n");
+	for (int i = 0; i < loopCount; ++i)
+	{
+		printf("%d\r", i);
 	}
 }
 
@@ -116,8 +125,8 @@ void helloPrint6()
 	HPEN oldpen = (HPEN)::SelectObject(dc, pen);
 	for (int i = 0; i < loopCount; ++i)
 	{
-		const int x = std::sin(i) * r;
-		const int y = std::cos(i) * r;
+		const int y = std::sin(i) * r;
+		const int x = std::cos(i) * r;
 		FillRect(dc, &drawRect, backBrush);
 		MoveToEx(dc, center.x + -x, center.y + -y, NULL);
 		LineTo(dc, center.x+x, center.y+ y);
@@ -153,7 +162,7 @@ void helloPrint7()
 	HPEN oldpen = (HPEN)::SelectObject(dc, pen);
 	for (int i = 0; i < loopCount; ++i)
 	{
-		if ( (i % 4) == 0)
+		if ( (i % (loopCount/10)) == 0)
 		{
 			const int x = std::sin(i) * r;
 			const int y = std::cos(i) * r;
@@ -174,7 +183,7 @@ void helloPrint8()
 	printf("Hello World!\n");
 	for (int i = 0; i < loopCount; ++i)
 	{
-		if ((i % 4) == 0) { printf("%d\r", i); }
+		if ((i % (loopCount/10)) == 0) { printf("%d\r", i); }
 	}
 }
 
@@ -191,15 +200,16 @@ void measure(fct f, const char* lbl)
 int main(int argc, char** argv)
 {
 	{
-		//measure(helloPrint0,"helloPrint0");
-		//measure(helloPrint1,"helloPrint1");
-		//measure(helloPrint2,"helloPrint2");
-		//measure(helloPrint3,"helloPrint3");
-		//measure(helloPrint4,"helloPrint4");
-		//measure(helloPrint5,"helloPrint5");
-		//measure(helloPrint6,"helloPrint6");
-		measure(helloPrint7,"helloPrint7");
-		measure(helloPrint8,"helloPrint8");
+		measure(helloPrint0,			"helloPrint0 printf mit i%4 gefiltert     ");
+		measure(helloPrint0_unfiltered, "helloPrint0 ohne modulo                  ");
+		measure(helloPrint1,			"helloPrint1 switch(0..4)                 ");
+		measure(helloPrint2,			"helloPrint2 print array[i%4]             ");
+		measure(helloPrint3,			"helloPrint3 table mit byteueberlauf      ");
+		measure(helloPrint4,			"helloPrint4 writeconsoleoutput array[i%4]");
+		measure(helloPrint5,			"helloPrint5 drawtext i%4                 ");
+		measure(helloPrint6,			"helloPrint6 gdi drawline i%1             ");
+		measure(helloPrint7,			"helloPrint7 gdi drawline i%(count/10)    ");
+		measure(helloPrint8,			"helloPrint8 printf mit i%(count/10)      ");
 	}
 	return 0;
 
