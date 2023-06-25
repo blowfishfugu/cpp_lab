@@ -129,6 +129,55 @@ void helloPrint6()
 	::ReleaseDC(wnd, dc);
 }
 
+void helloPrint7()
+{
+	static char rot[4] = { '|','/','-','\\' };
+	printf("Hello World!\n");
+
+	HWND wnd = GetConsoleWindow();
+	RECT bounds;
+	::GetWindowRect(wnd, &bounds);
+	POINT topleft{ bounds.left,bounds.top };
+	POINT bottomRight{ bounds.right,bounds.bottom };
+	::ScreenToClient(wnd, &topleft);
+	::ScreenToClient(wnd, &bottomRight);
+	bounds = RECT{ topleft.x,topleft.y,bottomRight.x,bottomRight.y };
+	const int r = 40;
+	const int penWidth = 8;
+	POINT center{ bottomRight.x - r * 2, topleft.y + r * 2 };
+	RECT drawRect{ center.x - r - penWidth,center.y - r - penWidth, center.x + r + penWidth,center.y + r + penWidth };
+
+	HDC dc = ::GetDC(wnd);
+	HBRUSH backBrush = (HBRUSH)::GetStockObject(BLACK_BRUSH);
+	HPEN pen = CreatePen(PS_SOLID, 8, RGB(0xBA, 0xAA, 0xCC));
+	HPEN oldpen = (HPEN)::SelectObject(dc, pen);
+	for (int i = 0; i < loopCount; ++i)
+	{
+		if ( (i % 4) == 0)
+		{
+			const int x = std::sin(i) * r;
+			const int y = std::cos(i) * r;
+			FillRect(dc, &drawRect, backBrush);
+			MoveToEx(dc, center.x + -x, center.y + -y, NULL);
+			LineTo(dc, center.x + x, center.y + y);
+		}
+	}
+	FillRect(dc, &drawRect, backBrush);
+	::SelectObject(dc, oldpen);
+
+	::DeleteObject(pen);
+	::ReleaseDC(wnd, dc);
+}
+
+void helloPrint8()
+{
+	printf("Hello World!\n");
+	for (int i = 0; i < loopCount; ++i)
+	{
+		if ((i % 4) == 0) { printf("%d\r", i); }
+	}
+}
+
 typedef void(*fct)();
 void measure(fct f, const char* lbl)
 {
@@ -142,13 +191,15 @@ void measure(fct f, const char* lbl)
 int main(int argc, char** argv)
 {
 	{
-		measure(helloPrint0,"helloPrint0");
-		measure(helloPrint1,"helloPrint1");
-		measure(helloPrint2,"helloPrint2");
-		measure(helloPrint3,"helloPrint3");
-		measure(helloPrint4,"helloPrint4");
-		measure(helloPrint5,"helloPrint5");
-		measure(helloPrint6,"helloPrint6");
+		//measure(helloPrint0,"helloPrint0");
+		//measure(helloPrint1,"helloPrint1");
+		//measure(helloPrint2,"helloPrint2");
+		//measure(helloPrint3,"helloPrint3");
+		//measure(helloPrint4,"helloPrint4");
+		//measure(helloPrint5,"helloPrint5");
+		//measure(helloPrint6,"helloPrint6");
+		measure(helloPrint7,"helloPrint7");
+		measure(helloPrint8,"helloPrint8");
 	}
 	return 0;
 
