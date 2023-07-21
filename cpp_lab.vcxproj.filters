@@ -37,9 +37,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
     <Filter Include="Hinnant_date">
       <UniqueIdentifier>{c8a7db64-2378-48cb-927d-a83240c4ed90}</UniqueIdentifier>
     </Filter>

@@ -121,8 +121,8 @@ void helloPrint6()
 	HPEN oldpen = (HPEN)::SelectObject(dc, pen);
 	for (int i = 0; i < loopCount; ++i)
 	{
-		const int y = std::sin(i) * r;
-		const int x = std::cos(i) * r;
+		const int y = static_cast<int>( std::sin(i) * r );
+		const int x = static_cast<int>(std::cos(i) * r);
 		FillRect(dc, &drawRect, backBrush);
 		MoveToEx(dc, center.x + -x, center.y + -y, NULL);
 		LineTo(dc, center.x + x, center.y + y);
@@ -160,8 +160,8 @@ void helloPrint7()
 	{
 		if ((i % (loopCount / 10)) == 0)
 		{
-			const int x = std::sin(i) * r;
-			const int y = std::cos(i) * r;
+			const int x = static_cast<int>(std::sin(i) * r);
+			const int y = static_cast<int>(std::cos(i) * r);
 			FillRect(dc, &drawRect, backBrush);
 			MoveToEx(dc, center.x + -x, center.y + -y, NULL);
 			LineTo(dc, center.x + x, center.y + y);
@@ -193,7 +193,6 @@ void measure(fct f, const char* lbl)
 	f();
 	watch.checkpoint(lbl);
 }
-
 int runHellos()
 {
 	measure(helloPrint0,			"helloPrint0 printf mit i%4 gefiltert     ");
