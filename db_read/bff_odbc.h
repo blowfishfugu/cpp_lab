@@ -1,6 +1,8 @@
 #pragma once
 #include "bff_diagnostics.h"
 #include "bff_odbcinfos.h"
+#include "bff_stringquery.h"
+#include "bff_boundquery.h"
 
 //odbc-headerfiles
 #include <odbcinst.h>
@@ -10,6 +12,7 @@
 #include <Sqlucode.h>
 #include <Msdasql.h>
 #include <Msdadc.h>
+
 #include <tuple>
 #include <source_location>
 #include <iostream>
@@ -117,36 +120,7 @@ struct HEnv {
 	}
 };
 
-struct Query
-{
-	HSTMT const& stmt;
-	std::string sql;
-	Query() = delete;
-	Query(HSTMT const& statement, std::string_view _sql="") : stmt(statement), sql(_sql) {};
-	void SetSql(std::string_view sqlStatement)
-	{
-		CloseIfNecessary();
-		this->sql = sqlStatement;
-	}
-	bool didExec = false;
-	std::function<void(Query& self)> OnBindParameters;
-	std::function<void(Query& self)> OnBindResults;
-	std::function<void(Query& self)> OnFetchedResult;
-	std::function<void(Query& self)> OnCountResult;
 
-	void CloseIfNecessary()
-	{
-		if (didExec && stmt)
-		{
-			SQLRETURN rc = SQLCloseCursor(stmt);
-			printDiagnostics(rc, SQL_HANDLE_STMT, stmt, std::source_location::current());
-		}
-		didExec = false;
-	}
-	~Query() {
-		CloseIfNecessary();
-	}
-};
 
 struct HDbc {
 	SQLHANDLE hdbc = SQL_NULL_HANDLE;

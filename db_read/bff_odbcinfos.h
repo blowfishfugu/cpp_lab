@@ -325,6 +325,7 @@ SQL_CONVERT_VARBINARY					 ,
 SQL_CONVERT_VARCHAR						 ,
 	};
 
+	//Generiert per PrepInfoGetters
 	static std::map < SQLUSMALLINT, std::tuple<std::string, GetterFunc>> infoGetters =
 	{
 	{ SQL_ACCESSIBLE_PROCEDURES, { "SQL_ACCESSIBLE_PROCEDURES", _getInfoString } },

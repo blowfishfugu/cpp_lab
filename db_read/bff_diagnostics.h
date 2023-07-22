@@ -7,6 +7,7 @@
 #include <iostream>
 #include <vector>
 #include <array>
+
 struct odbc_exception : public std::exception
 {
 	odbc_exception(std::string msg) : std::exception(msg.c_str())

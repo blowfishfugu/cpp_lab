@@ -41,5 +41,14 @@
     <ClInclude Include="bff_diagnostics.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="bff_boundquery.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bff_stringquery.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bff_charbuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
