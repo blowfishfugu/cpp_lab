@@ -9,6 +9,8 @@
 #include <iostream>
 #include <sqlext.h>
 #include <format>
+#include <optional>
+#include <vector>
 
 struct BitMask
 {
@@ -21,12 +23,23 @@ struct BitMask
 };
 
 using InfoValType = std::variant<std::nullptr_t, std::string, SQLUSMALLINT, SQLUINTEGER, SQLULEN,BitMask>;
-//Name,ReturnValue
-using InfoReturn = std::tuple<std::string, InfoValType>;
+//Name,ReturnValue,Diagnostic-Messages
+using InfoReturn = std::tuple<std::string, InfoValType, std::optional<std::vector<std::string>> >;
+
+//kann man da early abort machen? entfaltet VariantType über alle möglichkeiten
+//template<typename... VariantType>
+//void CallCout(std::ostream& os, std::variant<VariantType...> const& info)
+//{
+//	if (std::holds_alternative<VariantType>(info))
+//	{
+//		_cout(os, std::get<VariantType>(info));
+//	}
+//}
 
 std::ostream& operator<<(std::ostream& os, const InfoReturn& infoVal)
 {
-	const auto& [name, info] = infoVal;
+	const auto& [name, info,diagnostics] = infoVal;
+	//std::visit([&os](auto const& e){ os << e; }, info);
 	if (std::holds_alternative<std::nullptr_t>(info))
 	{
 		os << std::format("{}=(null)", name);
@@ -52,6 +65,15 @@ std::ostream& operator<<(std::ostream& os, const InfoReturn& infoVal)
 	{
 		os << std::format("{}={:#x}", name, std::get<SQLULEN>(info));
 	}
+
+	if (diagnostics)
+	{
+		for (const auto& diag : *diagnostics)
+		{
+			os << std::format("\t{}", diag);
+		}
+	}
+
 	return os;
 }
 
@@ -64,29 +86,29 @@ namespace Getters
 		std::array<char, 32> infoValue{};
 		SQLSMALLINT stringLen = 0;
 		SQLRETURN rc = SQLGetInfo(hdbc, infoType, (SQLPOINTER)infoValue.data(), (SQLSMALLINT)infoValue.size(), &stringLen);
-		printDiagnostics(rc, SQL_HANDLE_DBC, hdbc, std::source_location::current());
+		auto diagnostics=fetchDiagnostics(rc, SQL_HANDLE_DBC, hdbc, std::source_location::current());
 		if (stringLen <= infoValue.size())
 		{
 			if (SQL_SUCCEEDED(rc))
 			{
 				std::string_view trimmed{ infoValue.data(),(size_t)stringLen };
 				std::string val{ trimmed };
-				return { name,val };
+				return { name,val,diagnostics };
 			}
-			return { name, std::nullptr_t{} };
+			return { name, std::nullptr_t{},diagnostics };
 		}
 		
 		std::string buf((const size_t)stringLen + 1, '\0');
 		stringLen = 0;
 		rc = SQLGetInfo(hdbc, infoType, (SQLPOINTER)buf.data(), (SQLSMALLINT)buf.capacity(), &stringLen);
-		printDiagnostics(rc, SQL_HANDLE_DBC, hdbc, std::source_location::current());
+		diagnostics=fetchDiagnostics(rc, SQL_HANDLE_DBC, hdbc, std::source_location::current());
 		if (SQL_SUCCEEDED(rc))
 		{
 			std::string_view trimmed{ buf.data(),(size_t)stringLen };
 			std::string val{ trimmed };
-			return { name,val };
+			return { name,val,diagnostics };
 		}
-		return { name, std::nullptr_t{} };
+		return { name, std::nullptr_t{},diagnostics };
 
 	};
 
@@ -96,12 +118,12 @@ namespace Getters
 		NumType infoValue{};
 		SQLRETURN rc = SQLGetInfo(hdbc, infoType, &infoValue, sizeof(NumType), nullptr);
 
-		printDiagnostics(rc, SQL_HANDLE_DBC, hdbc, std::source_location::current());
+		auto diagnostics=fetchDiagnostics(rc, SQL_HANDLE_DBC, hdbc, std::source_location::current());
 		if (SQL_SUCCEEDED(rc))
 		{
-			return { name,infoValue };
+			return { name,infoValue,diagnostics };
 		}
-		return { name,std::nullptr_t{} };
+		return { name,std::nullptr_t{},diagnostics };
 	}
 
 	template<>
@@ -110,12 +132,12 @@ namespace Getters
 		BitMask infoValue{};
 		SQLRETURN rc = SQLGetInfo(hdbc, infoType, &infoValue.val, sizeof(infoValue.val), nullptr);
 
-		printDiagnostics(rc, SQL_HANDLE_DBC, hdbc, std::source_location::current());
+		auto diagnostics=fetchDiagnostics(rc, SQL_HANDLE_DBC, hdbc, std::source_location::current());
 		if (SQL_SUCCEEDED(rc))
 		{
-			return { name,infoValue };
+			return { name,infoValue,diagnostics };
 		}
-		return { name,std::nullptr_t{} };
+		return { name,std::nullptr_t{},diagnostics };
 	}
 
 	//Sammlungen aus https://learn.microsoft.com/en-us/sql/odbc/reference/syntax/sqlgetinfo-function?view=sql-server-ver16
@@ -303,6 +325,7 @@ SQL_CONVERT_VARBINARY					 ,
 SQL_CONVERT_VARCHAR						 ,
 	};
 
+	//Generiert per PrepInfoGetters
 	static std::map < SQLUSMALLINT, std::tuple<std::string, GetterFunc>> infoGetters =
 	{
 	{ SQL_ACCESSIBLE_PROCEDURES, { "SQL_ACCESSIBLE_PROCEDURES", _getInfoString } },

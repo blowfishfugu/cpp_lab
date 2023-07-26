@@ -2,7 +2,9 @@
 #include <functional>
 #include <algorithm>
 #include <array>
-
+#include <map>
+#include <iostream>
+#include <iomanip>
 //standard
 template<typename NumberType>
 void output(NumberType value)
