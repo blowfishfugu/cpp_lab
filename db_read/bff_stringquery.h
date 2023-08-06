@@ -38,7 +38,7 @@ struct Query
 		SQLRETURN rc = SQLNumResultCols(stmt, &sColCount);
 		printDiagnostics(rc, SQL_HANDLE_STMT, stmt, std::source_location::current());
 
-		SQLLEN cRowCount;
+		SQLLEN cRowCount = 0 ;
 		rc = SQLRowCount(stmt, &cRowCount);
 		printDiagnostics(rc, SQL_HANDLE_STMT, stmt, std::source_location::current());
 		bindBuffer(sColCount);
@@ -57,13 +57,14 @@ struct Query
 		for (auto& item : buffer)
 		{
 			DefaultRecord& desc = descriptions[col];
+			SQLSMALLINT bufLength = (SQLSMALLINT)(sizeof(DefaultRecord::value_type) * desc.capacity);
+			
 			++col;
 			SQLLEN readLen = item.data.size();
 			SQLLEN colSize = 0;
 			SQLLEN colType = 0;
 			SQLColAttribute(stmt, col, SQL_DESC_DISPLAY_SIZE, NULL, 0, NULL, &colSize);
 			SQLColAttribute(stmt, col, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &colType);
-			SQLSMALLINT bufLength = (SQLSMALLINT)(sizeof(DefaultRecord::value_type) * desc.capacity);
 			SQLColAttribute(stmt, col, SQL_DESC_NAME, (SQLPOINTER)desc.data.data(), bufLength, NULL, NULL);
 			std::cout << std::format("{:>5} {:>5} {:>5} {:<64}\n", col, colSize, colType, static_cast<std::string>(desc));
 			SQLBindCol(stmt, col, SQL_C_TCHAR, (SQLPOINTER)item.data.data(), item.capacity, &readLen);

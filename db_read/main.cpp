@@ -5,11 +5,11 @@
 #include "sample.h"
 #include <iomanip> //quoted
 
-
 //microsoft-signatur, mit sal.h.. braucht man das?
 //int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 int main(int argc, char** argv)
 {
+	//return 0;
 	//extern int runHellos();
 	//return runHellos();
 

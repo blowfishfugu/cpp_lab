@@ -44,6 +44,14 @@ constexpr void extractBuffer( InTuple& input, OutTuple& output )
 
 
 
+template<typename... ArgTypes>
+const char* printem(const char* fmt, ArgTypes... args)
+{
+	static char buf[256];
+	snprintf(buf, sizeof(buf), fmt, args...);
+	return buf;
+}
+
 //pro ItemTyp: bindColumn,cleanColumn, conv()-überladung -> muss existieren
 template<typename... ColumnTypes>
 struct BoundQuery
