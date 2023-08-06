@@ -31,5 +31,13 @@ struct CharBuffer
 
 };
 
+template<size_t szCapacity=MAXFIELDLEN>
+struct DescriptorBuffer : public CharBuffer<szCapacity>
+{
+	using value_type = CharBuffer<szCapacity>::value_type;
+	SQLLEN colSize = 0;
+	SQLLEN colType = 0;
+};
 
 using DefaultRecord = CharBuffer<MAXFIELDLEN>;
+using DefaultDescriptor = DescriptorBuffer<MAXFIELDLEN>;

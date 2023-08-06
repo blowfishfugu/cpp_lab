@@ -16,8 +16,9 @@ struct Query
 	bool didExec = false;
 
 	using ResultBuffer = std::vector<DefaultRecord>;
+	using DescriptorBuffer = std::vector<DefaultDescriptor>;
 	ResultBuffer buffer;
-	ResultBuffer descriptions;
+	DescriptorBuffer descriptions;
 
 	//returns ResultCols,RowCount
 	std::tuple<SQLSMALLINT, SQLLEN> Execute()
@@ -56,17 +57,16 @@ struct Query
 		SQLUSMALLINT col = 0;
 		for (auto& item : buffer)
 		{
-			DefaultRecord& desc = descriptions[col];
-			SQLSMALLINT bufLength = (SQLSMALLINT)(sizeof(DefaultRecord::value_type) * desc.capacity);
+			DefaultDescriptor& desc = descriptions[col];
+			SQLSMALLINT bufLength = (SQLSMALLINT)(sizeof(DefaultDescriptor::value_type) * desc.capacity);
 			
 			++col;
 			SQLLEN readLen = item.data.size();
-			SQLLEN colSize = 0;
-			SQLLEN colType = 0;
-			SQLColAttribute(stmt, col, SQL_DESC_DISPLAY_SIZE, NULL, 0, NULL, &colSize);
-			SQLColAttribute(stmt, col, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &colType);
+			
+			SQLColAttribute(stmt, col, SQL_DESC_DISPLAY_SIZE, NULL, 0, NULL, &desc.colSize);
+			SQLColAttribute(stmt, col, SQL_DESC_CONCISE_TYPE, NULL, 0, NULL, &desc.colType);
 			SQLColAttribute(stmt, col, SQL_DESC_NAME, (SQLPOINTER)desc.data.data(), bufLength, NULL, NULL);
-			std::cout << std::format("{:>5} {:>5} {:>5} {:<64}\n", col, colSize, colType, static_cast<std::string>(desc));
+			std::cout << std::format("{:>5} {:>5} {:>5} {:<64}\n", col, desc.colSize, desc.colType, static_cast<std::string>(desc));
 			SQLBindCol(stmt, col, SQL_C_TCHAR, (SQLPOINTER)item.data.data(), item.capacity, &readLen);
 		}
 	}
