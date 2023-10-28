@@ -24,6 +24,9 @@
     <ClCompile Include="pch.cpp">
       <Filter>pch</Filter>
     </ClCompile>
+    <ClCompile Include="RemoteDesk.WinsockLib.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
