@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "db_read", "db_read\db_read.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PrepInfoGetters", "PrepInfoGetters\PrepInfoGetters.vcxproj", "{E814B14E-427B-47D7-BC3B-19540476B7FE}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "remoteDesk", "remoteDesk\remoteDesk.vcxproj", "{84394767-6BEA-4F0E-85E1-C44168431933}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +33,10 @@ Global
 		{E814B14E-427B-47D7-BC3B-19540476B7FE}.Debug|x64.Build.0 = Debug|x64
 		{E814B14E-427B-47D7-BC3B-19540476B7FE}.Release|x64.ActiveCfg = Release|x64
 		{E814B14E-427B-47D7-BC3B-19540476B7FE}.Release|x64.Build.0 = Release|x64
+		{84394767-6BEA-4F0E-85E1-C44168431933}.Debug|x64.ActiveCfg = Debug|x64
+		{84394767-6BEA-4F0E-85E1-C44168431933}.Debug|x64.Build.0 = Debug|x64
+		{84394767-6BEA-4F0E-85E1-C44168431933}.Release|x64.ActiveCfg = Release|x64
+		{84394767-6BEA-4F0E-85E1-C44168431933}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
