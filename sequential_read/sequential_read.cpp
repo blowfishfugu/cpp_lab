@@ -277,13 +277,36 @@ void sortAndPrintOnViewType( data_type& data, StopWatch<std::ostream>& stopWatch
 	stopWatch.checkpoint("print done ");
 }
 
+namespace Localization {
+	enum class FormattingType : std::uint8_t {
+		player=0,
+		percentageInt,
+		max
+	};
+
+	struct KeyWord {
+		enum { token_max = 16 };
+		char token[token_max]{};
+		FormattingType type=FormattingType::max;
+	};
+
+	struct FormattingMgr {
+		KeyWord keywords[(size_t)FormattingType::max]{
+			 { "PLAYER", FormattingType::player },
+			 { "PERC1", FormattingType::percentageInt },
+		};
+	};
+
+	static FormattingMgr stringFormattingManager;
+}
+
 int main(void)
 {
 	//std::ios_base::sync_with_stdio(false); //optimierung.
 										   //doubles
 	std::cout.setf(std::cout.fixed);
 	std::cout.precision(8);
-
+	
 #define TESTS 0
 #if TESTS
 	runLoader( load<read_none>, " read none " );

@@ -14,12 +14,12 @@ struct CharBuffer
 		//trimLeft()
 		auto itStart = data.begin();
 		while (itStart != data.end()) {
-			const char c = *itStart;
+			const unsigned char c = static_cast<unsigned char>(*itStart); //unsigned char wichtig, è umlaute usw wären sonst negativ
 			if (c < 33) { ++itStart; }
 			else { break; }
 		}
 		//trimRight()	
-		auto itEnd = std::find_if(itStart, data.end(), [](const char c) { return c < 33; });
+		auto itEnd = std::find_if(itStart, data.end(), [](const unsigned char c) { return c < 33; });
 		if (itEnd != data.end()) { *itEnd = '\0'; }
 
 		return std::string(itStart, itEnd);
