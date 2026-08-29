@@ -1,6 +1,21 @@
 #include <Windows.h>
 #include <stdio.h>
 #include "../sequential_read/StopWatch.h"
+#include <tuple>
+#include <array>
+#include <utility>
+
+//oh, neu!
+#include <flat_map>
+
+//consteval bool tstTupleLike() {
+//	std::tuple<int, long, int> t{1,2,3};
+//	std::array<int, 3> a{ 1,2,3 };
+//	return t == a;
+//	//return std::get<0>(t) == std::get<0>(a);
+//}
+//
+//constexpr bool result = tstTupleLike();
 
 constexpr int loopCount = 100000;
 void helloPrint0()

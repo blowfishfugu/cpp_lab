@@ -83,7 +83,7 @@ struct my_line_iterator
 		return *this;
 	}
 	//it++
-	my_line_iterator& operator++(int) {
+	my_line_iterator operator++(int) {
 		my_line_iterator elem(*this);
 		++*this;
 		return elem;
