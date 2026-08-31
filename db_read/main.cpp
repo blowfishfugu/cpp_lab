@@ -4,6 +4,8 @@
 #include "bff_odbc.h"
 #include "sample.h"
 #include <iomanip> //quoted
+#include <ranges>
+#include <algorithm>
 
 bool tstTupleLike() {
 	std::tuple<int, long, int> t{ 1,2,3 };
@@ -56,17 +58,42 @@ auto parallel_enumerate_map2_filter2(
 	return { out1,out2 };
 }
 
+#include <concepts>
+#include <random>
+#include <print>
+#include <iostream>
+template <typename ty> 
+concept Integer = std::integral<ty> && (!std::is_same_v < std::remove_cv_t<ty>, bool>);
 
+template<Integer ty>
+ty randomInteger(ty const& min, ty const& max) {
+	static std::random_device rd;
+	static std::mt19937 gen{ rd() };
+	std::uniform_int_distribution<ty> dist(min, max);
+	return dist(gen);
+}
 
+int runRandoms() {
+	constexpr Integer auto min = -20;
+	constexpr Integer auto max = 20;
+	for (auto _ : std::views::iota(0, 30) ) {
+		auto val = randomInteger( min, max );
+		std::println("{:.>{}}{:>{}d}{:.<{}}", "", val - min , val, 3, "", max - val);
+	}
+	return 0;
+}
 
 //microsoft-signatur, mit sal.h.. braucht man das?
 //int __cdecl _tmain(int argc, _In_reads_(argc) TCHAR** argv)
 int main(int argc, char** argv)
 {
-	tstTupleLike();
+	//tstTupleLike();
 	//return 0;
+	
 	//extern int runHellos();
 	//return runHellos();
+
+	return runRandoms();
 
 	const char* pwszConnStr =
 		"DRIVER={ODBC Driver 18 for SQL Server}"
